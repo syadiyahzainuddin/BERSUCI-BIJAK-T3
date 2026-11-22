@@ -1,0 +1,2655 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ESCAPE ROOM: RAHSIA KAMPUNG BERSIH</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts: Fredoka & Nunito untuk gaya kartun kanak-kanak yang jelas & ceria -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #1e1b4b;
+        }
+        h1, h2, h3, .font-game {
+            font-family: 'Fredoka', sans-serif;
+        }
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            touch-action: none;
+        }
+        /* Animasi butang & elemen UI */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatSlow 3s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+            50% { box-shadow: 0 0 0 12px rgba(250, 204, 21, 0); }
+        }
+        .btn-pulse {
+            animation: pulseGlow 2s infinite;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 10px 25px rgba(30, 27, 75, 0.25);
+        }
+        .glass-dark {
+            background: rgba(30, 27, 75, 0.85);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(165, 180, 252, 0.4);
+        }
+        /* Skrol tersuai */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 99px; }
+        
+        /* Gaya Sijil Digital */
+        .certificate-border {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+            border: 10px double #d97706;
+            box-shadow: inset 0 0 0 4px #f59e0b, 0 20px 40px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="relative text-slate-800">
+
+    <!-- KANVAS 3D UTAMA -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- LABEL HOVER OBJEK 3D -->
+    <div id="hover-tooltip" class="hidden fixed pointer-events-none z-20 px-3 py-1.5 rounded-full bg-indigo-900/90 text-white font-game text-sm sm:text-base shadow-lg border-2 border-amber-300 transform -translate-x-1/2 -translate-y-full transition-opacity duration-150">
+        🔍 <span id="hover-tooltip-text">Objek</span>
+    </div>
+
+    <!-- SKRIN PEMBUKAAN (START SCREEN) -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-indigo-900/90 via-purple-900/85 to-teal-900/90 backdrop-blur-sm">
+        <div class="glass-panel max-w-2xl w-full rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden">
+            <!-- Hiasan Latar -->
+            <div class="absolute -top-10 -left-10 w-36 h-36 bg-amber-300/30 rounded-full blur-xl"></div>
+            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-teal-300/30 rounded-full blur-xl"></div>
+
+            <div class="inline-block px-4 py-1.5 rounded-full bg-indigo-100 text-indigo-800 font-bold text-xs sm:text-sm mb-3 border border-indigo-200">
+                🕌 PENDIDIKAN ISLAM TAHUN 4 • PENGEMBARAAN 3D
+            </div>
+            
+            <h1 class="text-3xl sm:text-5xl font-extrabold text-indigo-950 tracking-tight mb-2 animate-float">
+                ESCAPE ROOM:<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-indigo-600 to-amber-600">
+                    RAHSIA KAMPUNG BERSIH
+                </span>
+            </h1>
+            
+            <p class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto mb-6 leading-relaxed">
+                Wahai Penyiasat Muda! Kampung Bersih telah dikunci oleh misteri kekotoran. Selesaikan teka-teki di <strong>6 Bilik Rahsia</strong> dan sucikan najis mengikut syariat Islam untuk mengumpul 6 Kunci Utama!
+            </p>
+
+            <!-- Ringkasan 3 Jenis Najis -->
+            <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-7 text-xs sm:text-sm">
+                <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-2.5">
+                    <div class="text-xl sm:text-2xl mb-1">💧</div>
+                    <div class="font-bold text-sky-900">Mukhaffafah</div>
+                    <div class="text-sky-700 text-[11px]">Najis Ringan</div>
+                </div>
+                <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-2.5">
+                    <div class="text-xl sm:text-2xl mb-1">🧼</div>
+                    <div class="font-bold text-amber-900">Mutawassitah</div>
+                    <div class="text-amber-700 text-[11px]">Najis Pertengahan</div>
+                </div>
+                <div class="bg-rose-50 border-2 border-rose-200 rounded-2xl p-2.5">
+                    <div class="text-xl sm:text-2xl mb-1">🏺</div>
+                    <div class="font-bold text-rose-900">Mughallazah</div>
+                    <div class="text-rose-700 text-[11px]">Najis Berat (7x)</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                <button onclick="startGame()" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-game text-xl sm:text-2xl shadow-lg shadow-teal-600/30 transform transition active:scale-95 btn-pulse cursor-pointer">
+                    🚀 MULA PERMAINAN
+                </button>
+                <button onclick="toggleModal('how-to-play-modal', true)" class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-game text-lg transition active:scale-95 cursor-pointer">
+                    📖 ARAHAN
+                </button>
+                <button onclick="toggleModal('settings-modal', true)" class="w-full sm:w-auto px-5 py-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-game text-lg transition active:scale-95 cursor-pointer">
+                    ⚙️ TETAPAN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD ATAS (TOP BAR) -->
+    <div id="top-hud" class="hidden fixed top-0 left-0 right-0 z-30 p-2 sm:p-4 pointer-events-none flex flex-col gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <!-- Info Bilik Semasa -->
+            <div class="glass-panel pointer-events-auto rounded-2xl px-3.5 py-2 flex items-center gap-3">
+                <div id="hud-room-badge" class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-game text-lg flex items-center justify-center shadow">
+                    1/6
+                </div>
+                <div>
+                    <div id="hud-room-title" class="font-game text-sm sm:text-lg text-indigo-950 leading-tight">
+                        BILIK 1: MISTERI TILAM BAYI
+                    </div>
+                    <div id="hud-room-topic" class="text-[11px] sm:text-xs font-bold text-teal-700 uppercase tracking-wider">
+                        TOPIK: NAJIS MUKHAFFAFAH
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kemajuan 6 Kunci -->
+            <div class="glass-panel pointer-events-auto rounded-2xl px-3 py-1.5 hidden md:flex items-center gap-1.5" title="Kemajuan 6 Kunci Utama">
+                <span class="text-xs font-extrabold text-slate-600 mr-1">KUNCI:</span>
+                <div id="keys-progress-container" class="flex items-center gap-1">
+                    <!-- Dijana melalui JS -->
+                </div>
+            </div>
+
+            <!-- Masa, Markah & Butang Kawalan -->
+            <div class="flex items-center gap-2 pointer-events-auto ml-auto sm:ml-0">
+                <div class="glass-panel rounded-2xl px-3 py-1.5 text-center">
+                    <div class="text-[10px] font-bold text-slate-500">MASA</div>
+                    <div id="hud-timer" class="font-game text-sm sm:text-base text-indigo-900">15:00</div>
+                </div>
+                <div class="glass-panel rounded-2xl px-3 py-1.5 text-center">
+                    <div class="text-[10px] font-bold text-slate-500">MARKAH</div>
+                    <div id="hud-score" class="font-game text-sm sm:text-base text-amber-600">0</div>
+                </div>
+                <button onclick="showHint()" class="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-game text-xs sm:text-sm shadow-md border-2 border-amber-200 transition active:scale-95 cursor-pointer flex items-center gap-1">
+                    💡 <span class="hidden sm:inline">PETUNJUK</span>
+                </button>
+                <button onclick="toggleModal('settings-modal', true)" class="p-2.5 rounded-2xl glass-panel hover:bg-white text-slate-700 transition active:scale-95 cursor-pointer" title="Tetapan">
+                    ⚙️
+                </button>
+            </div>
+        </div>
+
+        <!-- Objektif Semasa Bar -->
+        <div class="mx-auto pointer-events-auto max-w-xl w-full">
+            <div class="bg-indigo-950/85 backdrop-blur text-white px-4 py-1.5 rounded-full border border-indigo-400/40 shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <span class="text-amber-300 font-bold">🎯 MISI:</span>
+                <span id="hud-objective" class="truncate">Cari petunjuk di dalam laci dan periksa tilam bayi.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAKLUM BALAS PANTAS (TOAST MESSAGE) -->
+    <div id="toast-banner" class="hidden fixed top-28 left-1/2 transform -translate-x-1/2 z-40 max-w-md w-[92%] pointer-events-none">
+        <div id="toast-box" class="rounded-2xl px-5 py-3 shadow-2xl border-2 text-center font-bold text-sm sm:text-base transition-all">
+            Mesej maklum balas
+        </div>
+    </div>
+
+    <!-- HUD BAWAH: INVENTORI & BUTANG INTERAKSI BESAR -->
+    <div id="bottom-hud" class="hidden fixed bottom-0 left-0 right-0 z-30 p-2 sm:p-4 pointer-events-none flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
+        <!-- Bar Inventori -->
+        <div class="glass-panel pointer-events-auto rounded-3xl p-2 sm:p-2.5 flex items-center gap-2 w-full sm:w-auto overflow-x-auto max-w-full shadow-xl">
+            <div class="px-2 text-xs font-extrabold text-indigo-900 uppercase tracking-wider shrink-0 flex flex-col items-center">
+                <span>🎒</span>
+                <span>BEG</span>
+            </div>
+            <div id="inventory-slots" class="flex items-center gap-2">
+                <!-- Slot inventori dijana oleh JS -->
+            </div>
+            <div id="selected-item-info" class="hidden lg:block pl-2 pr-3 border-l-2 border-slate-200 max-w-[200px]">
+                <div id="selected-item-name" class="font-bold text-xs text-indigo-950">Tiada Barang Dipilih</div>
+                <div id="selected-item-desc" class="text-[11px] text-slate-600 leading-tight">Klik barang dalam beg untuk menggunakannya.</div>
+            </div>
+        </div>
+
+        <!-- Butang INTERAKSI Besar (Mesra Touchpad & Tablet) -->
+        <button id="btn-interact" onclick="triggerNearestInteraction()" class="pointer-events-auto w-full sm:w-auto px-7 py-3.5 sm:py-4 rounded-3xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-indigo-950 font-game text-lg sm:text-xl shadow-xl border-4 border-white transform transition active:scale-95 cursor-pointer flex items-center justify-center gap-2 shrink-0">
+            <span id="btn-interact-icon">✋</span>
+            <span id="btn-interact-label">INTERAKSI</span>
+        </button>
+    </div>
+
+    <!-- MODAL INTERAKSI AKTIF (MINI-GAME PENYUCIAN / TEKA-TEKI VISUAL / NOTA) -->
+    <div id="puzzle-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-5 sm:p-7 relative shadow-2xl border-4 border-indigo-200 max-h-[90vh] overflow-y-auto">
+            <button onclick="closePuzzleModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-200 text-slate-700 hover:text-rose-700 font-bold text-lg flex items-center justify-center cursor-pointer">
+                ✕
+            </button>
+            <div id="puzzle-modal-badge" class="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 font-bold text-xs mb-2">
+                SIASATAN OBJEK
+            </div>
+            <h2 id="puzzle-modal-title" class="text-2xl font-game text-indigo-950 mb-3">
+                Tajuk Interaksi
+            </h2>
+            <div id="puzzle-modal-body" class="space-y-4 text-slate-700">
+                <!-- Kandungan dinamik bagi setiap aktiviti penyucian & teka-teki -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PEMBELAJARAN & GANJARAN SELEPAS SELESAI BILIK -->
+    <div id="room-complete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-indigo-950/85 backdrop-blur-md">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 text-center relative border-4 border-amber-300 shadow-2xl">
+            <div class="w-20 h-20 mx-auto -mt-14 mb-3 rounded-3xl bg-gradient-to-br from-amber-300 to-yellow-500 flex items-center justify-center text-4xl shadow-lg border-4 border-white animate-bounce">
+                🏅
+            </div>
+            <div class="text-xs font-extrabold text-teal-700 uppercase tracking-widest mb-1">
+                BILIK BERJAYA DISUCIKAN!
+            </div>
+            <h2 id="complete-title" class="text-2xl sm:text-3xl font-game text-indigo-950 mb-2">
+                Lencana Diperoleh!
+            </h2>
+            <div id="complete-badge-name" class="inline-block px-4 py-1.5 rounded-full bg-amber-100 text-amber-900 font-bold text-sm border border-amber-300 mb-4">
+                🌟 Pakar Najis Mukhaffafah
+            </div>
+
+            <!-- Kotak Rumusan Ilmu Pendidikan Islam -->
+            <div class="bg-teal-50 border-2 border-teal-200 rounded-2xl p-4 text-left mb-5">
+                <div class="font-bold text-teal-900 text-sm mb-1 flex items-center gap-1.5">
+                    📘 <span>RUMUSAN ILMU FIQH (TAHUN 4):</span>
+                </div>
+                <p id="complete-lesson-text" class="text-slate-700 text-sm leading-relaxed">
+                    Penerangan ilmu di sini.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-center gap-4 mb-6 text-sm font-bold">
+                <div class="bg-indigo-50 px-4 py-2 rounded-xl text-indigo-900">
+                    🔑 Kunci Ditemui: <span id="complete-key-num">1/6</span>
+                </div>
+                <div class="bg-amber-50 px-4 py-2 rounded-xl text-amber-900">
+                    ⭐ Bonus: +200 Markah
+                </div>
+            </div>
+
+            <button onclick="proceedToNextRoom()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-game text-xl shadow-lg transition active:scale-95 cursor-pointer">
+                MASUK KE BILIK SETERUSNYA ➡️
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL ARAHAN PERMAINAN -->
+    <div id="how-to-play-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 relative">
+            <button onclick="toggleModal('how-to-play-modal', false)" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-200 font-bold cursor-pointer">✕</button>
+            <h2 class="text-2xl font-game text-indigo-950 mb-4">📖 CARA BERMAIN (MESRA TOUCHPAD)</h2>
+            <ul class="space-y-3 text-sm sm:text-base text-slate-700">
+                <li class="flex items-start gap-3">
+                    <span class="text-xl">👆</span>
+                    <span><strong>Bergerak:</strong> Klik kiri di mana-mana kawasan lantai bilik 3D untuk menggerakkan watak penyiasat anda.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="text-xl">🔍</span>
+                    <span><strong>Periksa & Kutip:</strong> Klik terus pada objek bercahaya (laci, nota, bekas air, peti) atau tekan butang besar <strong>INTERAKSI</strong> di bawah kanan.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="text-xl">🎒</span>
+                    <span><strong>Guna Barang:</strong> Klik barang di dalam <strong>BEG INVENTORI</strong> di bahagian bawah, kemudian klik objek yang hendak disucikan!</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="text-xl">💡</span>
+                    <span><strong>Perlukan Bantuan?</strong> Tekan butang <strong>PETUNJUK</strong> di bahagian atas pada bila-bila masa.</span>
+                </li>
+            </ul>
+            <button onclick="toggleModal('how-to-play-modal', false)" class="mt-6 w-full py-3 rounded-2xl bg-indigo-600 text-white font-game text-lg cursor-pointer">
+                FAHAM, JOM MAIN!
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL TETAPAN (MUZIK, KELANTANGAN, RESOLUSI, SKRIN PENUH) -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 relative">
+            <button onclick="toggleModal('settings-modal', false)" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-200 font-bold cursor-pointer">✕</button>
+            <h2 class="text-2xl font-game text-indigo-950 mb-4">⚙️ TETAPAN PERMAINAN</h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between bg-slate-100 p-3 rounded-2xl">
+                    <span class="font-bold text-slate-800">🎵 Muzik Latar & Kesan Bunyi</span>
+                    <button id="btn-toggle-audio" onclick="toggleAudio()" class="px-4 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-sm cursor-pointer">
+                        HIDUP
+                    </button>
+                </div>
+
+                <div class="bg-slate-100 p-3 rounded-2xl">
+                    <div class="flex justify-between font-bold text-slate-800 text-sm mb-1">
+                        <span>🔊 Kelantangan Bunyi</span>
+                        <span id="volume-label">70%</span>
+                    </div>
+                    <input type="range" id="volume-slider" min="0" max="100" value="70" oninput="updateVolume(this.value)" class="w-full accent-indigo-600 cursor-pointer">
+                </div>
+
+                <div class="bg-slate-100 p-3 rounded-2xl">
+                    <div class="font-bold text-slate-800 text-sm mb-2">🖥️ Kualiti Grafik 3D</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setGraphicsQuality('low')" id="qual-low" class="py-2 rounded-xl bg-white border border-slate-300 font-bold text-xs cursor-pointer">Ringan (Lancar)</button>
+                        <button onclick="setGraphicsQuality('high')" id="qual-high" class="py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs cursor-pointer">Tinggi (Tajam)</button>
+                    </div>
+                </div>
+
+                <button onclick="toggleFullscreen()" class="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-game text-base cursor-pointer">
+                    ⛶ TOGOL SKRIN PENUH
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SKRIN KEMENANGAN & SIJIL DIGITAL -->
+    <div id="victory-screen" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-indigo-950 via-purple-900 to-teal-900 p-4 flex items-center justify-center">
+        <div class="glass-panel max-w-3xl w-full rounded-3xl p-6 sm:p-8 text-center my-auto shadow-2xl border-4 border-amber-300">
+            <div class="text-5xl sm:text-6xl mb-2">🏆🎉🔑</div>
+            <h1 class="text-3xl sm:text-5xl font-game text-indigo-950 mb-2">
+                TAHNIAH, WIRA BERSUCI!
+            </h1>
+            <p class="text-slate-700 text-base sm:text-lg max-w-xl mx-auto mb-5">
+                Anda telah berjaya menyelesaikan semua enam bilik misteri dan menyelamatkan <strong>Kampung Bersih</strong>!
+            </p>
+
+            <!-- Statistik Akhir -->
+            <div class="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
+                <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3">
+                    <div class="text-xs font-bold text-amber-800">MARKAH AKHIR</div>
+                    <div id="final-score" class="font-game text-2xl text-amber-600">1200</div>
+                </div>
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3">
+                    <div class="text-xs font-bold text-indigo-800">MASA DIGUNAKAN</div>
+                    <div id="final-time" class="font-game text-2xl text-indigo-600">05:30</div>
+                </div>
+                <div class="bg-teal-50 border-2 border-teal-200 rounded-2xl p-3">
+                    <div class="text-xs font-bold text-teal-800">KUNCI UTAMA</div>
+                    <div class="font-game text-2xl text-teal-600">6 / 6</div>
+                </div>
+            </div>
+
+            <!-- Input Nama untuk Sijil Digital -->
+            <div class="max-w-md mx-auto mb-5">
+                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Masukkan Nama Anda Untuk Sijil Digital:</label>
+                <div class="flex gap-2">
+                    <input type="text" id="student-name-input" placeholder="Contoh: Ahmad Danial Tahun 4 Bestari" maxlength="38" oninput="updateCertificateName(this.value)" class="flex-1 px-4 py-2.5 rounded-xl border-2 border-indigo-300 focus:outline-none focus:border-indigo-600 font-bold text-center text-indigo-950">
+                </div>
+            </div>
+
+            <!-- PAPARAN SIJIL DIGITAL -->
+            <div id="digital-certificate" class="certificate-border rounded-2xl p-5 sm:p-8 max-w-2xl mx-auto mb-6 text-center relative">
+                <div class="text-xs sm:text-sm font-extrabold tracking-widest text-amber-800 uppercase mb-1">
+                    KEMENTERIAN PENDIDIKAN • PENDIDIKAN ISLAM TAHUN 4
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-game text-amber-900 mb-2">
+                    SIJIL PENGHARGAAN WIRA BERSUCI
+                </h2>
+                <p class="text-xs sm:text-sm text-amber-950 mb-3">Dengan ini diperakui bahawa</p>
+                <div id="cert-student-name" class="text-xl sm:text-3xl font-game text-indigo-950 border-b-2 border-amber-700/40 inline-block px-6 pb-1 mb-3">
+                    PENYIASAT MUDA KAMPUNG BERSIH
+                </div>
+                <p class="text-xs sm:text-sm text-amber-950 max-w-md mx-auto leading-relaxed mb-4">
+                    Telah berjaya menamatkan cabaran interaktif <strong>ESCAPE ROOM: RAHSIA KAMPUNG BERSIH</strong> dan menguasai ilmu penyucian <em>Najis Mukhaffafah, Mutawassitah</em> dan <em>Mughallazah</em>.
+                </p>
+                <div class="flex flex-wrap justify-center gap-2 text-[11px] font-bold text-amber-900">
+                    <span class="px-2.5 py-1 bg-white/80 rounded-full">🏅 Pakar Mukhaffafah</span>
+                    <span class="px-2.5 py-1 bg-white/80 rounded-full">🏅 Pakar Mutawassitah</span>
+                    <span class="px-2.5 py-1 bg-white/80 rounded-full">🏅 Pakar Mughallazah (7x)</span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3">
+                <button onclick="downloadCertificateImage()" class="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-game text-lg shadow-lg cursor-pointer">
+                    📥 MUAT TURUN SIJIL
+                </button>
+                <button onclick="location.reload()" class="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-game text-lg shadow-lg cursor-pointer">
+                    🔄 MAIN SEMULA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * ENJIN AUDIO SINTESIS (WEB AUDIO API) - TIADA PAUTAN LUARAN DIPERLUKAN
+         * ============================================================================
+         */
+        const SoundEngine = {
+            ctx: null,
+            enabled: true,
+            volume: 0.7,
+            bgmInterval: null,
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playTone(freq, type, duration, delay = 0, volScale = 1) {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime + delay;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, now);
+                
+                const finalVol = Math.max(0.001, this.volume * 0.25 * volScale);
+                gain.gain.setValueAtTime(finalVol, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + duration);
+            },
+
+            playStep() {
+                this.playTone(180 + Math.random() * 40, 'triangle', 0.06, 0, 0.25);
+            },
+
+            playPickup() {
+                this.playTone(523.25, 'sine', 0.12, 0, 0.8);
+                this.playTone(659.25, 'sine', 0.12, 0.08, 0.8);
+                this.playTone(783.99, 'sine', 0.2, 0.16, 0.9);
+            },
+
+            playSplash() {
+                // Bunyi percikan air lembut
+                for (let i = 0; i < 4; i++) {
+                    this.playTone(300 + Math.random() * 500, 'sine', 0.12, i * 0.04, 0.5);
+                }
+            },
+
+            playWipe() {
+                this.playTone(260, 'triangle', 0.1, 0, 0.5);
+                this.playTone(340, 'triangle', 0.12, 0.07, 0.5);
+            },
+
+            playError() {
+                this.playTone(220, 'sawtooth', 0.18, 0, 0.5);
+                this.playTone(180, 'sawtooth', 0.25, 0.14, 0.5);
+            },
+
+            playUnlock() {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((n, idx) => this.playTone(n, 'triangle', 0.25, idx * 0.1, 0.9));
+            },
+
+            startBGM() {
+                if (this.bgmInterval) clearInterval(this.bgmInterval);
+                const melody = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 392.00];
+                let step = 0;
+                this.bgmInterval = setInterval(() => {
+                    if (this.enabled && GameState.started && !GameState.paused) {
+                        this.playTone(melody[step % melody.length], 'sine', 0.45, 0, 0.15);
+                        step++;
+                    }
+                }, 750);
+            }
+        };
+
+        /**
+         * ============================================================================
+         * KEADAAN PERMAINAN (GAME STATE) & DATA 6 BILIK
+         * ============================================================================
+         */
+        const GameState = {
+            started: false,
+            paused: false,
+            currentRoom: 0, // 0 hingga 5 (mewakili Bilik 1 hingga 6)
+            score: 0,
+            secondsElapsed: 0,
+            timerInterval: null,
+            keysCollected: [false, false, false, false, false, false],
+            inventory: [],
+            selectedItemId: null,
+            roomProgress: {}, // Menyimpan status teka-teki setiap bilik
+            interactables: [], // Objek 3D interaktif dalam bilik semasa
+            particles: [],
+            animations: []
+        };
+
+        const ROOMS_DATA = [
+            {
+                id: 1,
+                title: "BILIK 1: MISTERI TILAM BAYI",
+                topic: "TOPIK: NAJIS MUKHAFFAFAH",
+                wallColor: 0xdbeafe, // Biru pastel lembut
+                floorColor: 0xfef3c7, // Krim kayu cerah
+                accentColor: 0x60a5fa,
+                initialObjective: "Buka laci almari, periksa gambar bayi & cari Botol Air Mutlak.",
+                hint: "Klik laci putih di sebelah kiri untuk membaca nota bayi. Kemudian cari Botol Air Mutlak di atas meja kecil dan gunakannya pada tilam bayi!",
+                badgeName: "🌟 Wira Najis Mukhaffafah",
+                lessonText: "Air kencing bayi lelaki yang berumur di bawah 2 tahun dan hanya minum susu ibu sahaja (belum makan makanan lain sebagai makanan utama) ialah <strong>Najis Mukhaffafah</strong>. Cara menyucikannya memadai dengan <strong>merenjiskan air mutlak</strong> ke atas kawasan yang terkena najis sehingga merata."
+            },
+            {
+                id: 2,
+                title: "BILIK 2: KOD RAHSIA DARAH",
+                topic: "TOPIK: NAJIS MUTAWASSITAH",
+                wallColor: 0xfef9c3, // Kuning pastel bilik darjah
+                floorColor: 0xd1fae5, // Hijau pudina lembut
+                accentColor: 0xf59e0b,
+                initialObjective: "Cari 3 petunjuk tersembunyi, Kain Pembersih & Bekas Air Mutlak.",
+                hint: "Periksa bawah meja, papan hitam dan rak buku untuk 3 petunjuk. Gunakan KAIN PEMBERSIH dahulu pada kesan darah untuk buang ain najis, kemudian basuh dengan AIR MUTLAK!",
+                badgeName: "🧼 Penyiasat Najis Mutawassitah",
+                lessonText: "Darah ialah <strong>Najis Mutawassitah</strong>. Cara menyucikannya ialah dengan <strong>membuang ain (zat) najis terlebih dahulu</strong>, kemudian membasuhnya menggunakan <strong>air mutlak</strong> sehingga hilang ketiga-tiga sifat najis iaitu <strong>warna, bau dan rasa</strong> setakat yang mampu."
+            },
+            {
+                id: 3,
+                title: "BILIK 3: PETI TUJUH KUNCI",
+                topic: "TOPIK: NAJIS MUGHALLAZAH",
+                wallColor: 0xede9fe, // Ungu lavender misteri
+                floorColor: 0xe2e8f0, // Batu laman cerah
+                accentColor: 0x8b5cf6,
+                initialObjective: "Kumpul Tanah Suci & Air Mutlak untuk menyucikan bekas jilatan anjing (7 basuhan).",
+                hint: "Ambil Bekas Tanah Suci (pasu coklat) dan Bekas Air Mutlak (kendi biru). Klik pada Mangkuk Air Tercemar dan lakukan 1 basuhan air tanah diikuti 6 basuhan air mutlak!",
+                badgeName: "🏺 Penjaga Rahsia Tujuh Basuhan",
+                lessonText: "Anjing dan babi serta keturunannya ialah <strong>Najis Mughallazah</strong>. Apabila bekas terkena jilatan anjing, ia wajib disucikan dengan <strong>7 kali basuhan</strong> menggunakan air mutlak: <strong>1 kali basuhan dengan air yang bercampur tanah suci</strong> dan <strong>6 kali basuhan dengan air mutlak</strong>."
+            },
+            {
+                id: 4,
+                title: "BILIK 4: MAKAM PETUNJUK TERSEMBUNYI",
+                topic: "TOPIK: PENGUKUHAN NAJIS MUTAWASSITAH",
+                wallColor: 0xccfbf1, // Teal taman segar
+                floorColor: 0xd9f99d, // Hijau taman lembut
+                accentColor: 0x14b8a6,
+                initialObjective: "Cari Penyodok & Air Mutlak untuk bersihkan bangku, kemudian susun simbol pintu.",
+                hint: "Cari Penyodok di tepi semak dan Bekas Air di meja batu. Buang najis pada bangku guna Penyodok dahulu, baru siram Air Mutlak! Akhir sekali selesaikan kunci 3 simbol (Warna, Bau, Rasa).",
+                badgeName: "🌿 Pakar Kebersihan Taman",
+                lessonText: "Tahi manusia ialah <strong>Najis Mutawassitah</strong>. Kita mesti memastikan zat najis dibuang bersih menggunakan alat yang sesuai sebelum dialirkan <strong>air mutlak</strong> sehingga hilang <strong>warna, bau dan rasa</strong>."
+            },
+            {
+                id: 5,
+                title: "BILIK 5: MISI PAKAIAN TERCEMAR",
+                topic: "TOPIK: BEZA MUKHAFFAFAH & MUTAWASSITAH",
+                wallColor: 0xffedd5, // Pic/oren lembut kedai jahit
+                floorColor: 0xfde68a, // Lantai kayu hangat
+                accentColor: 0xf97316,
+                initialObjective: "Baca Nota Pelanggan dan tentukan cara menyucikan pakaian yang tercemar.",
+                hint: "Baca Nota Pelanggan di atas meja! Pakaian itu terkena air kencing ORANG DEWASA (bukan bayi lelaki < 2 tahun). Jadi ia Najis Mutawassitah—gunakan Kain Lap dan basuh sepenuhnya dengan Air Mutlak!",
+                badgeName: "👕 Hakim Syariat Cilik",
+                lessonText: "Berhati-hati! Air kencing <strong>orang dewasa</strong> (atau kanak-kanak yang sudah makan makanan utama / perempuan) dikira sebagai <strong>Najis Mutawassitah</strong>, BUKAN Mukhaffafah. Maka tidak memadai direnjis sahaja, sebaliknya wajib dibasuh dengan air mutlak sehingga hilang warna, bau dan rasa."
+            },
+            {
+                id: 6,
+                title: "BILIK 6: PINTU AKHIR TUJUH BASUHAN",
+                topic: "TOPIK: APLIKASI MENYELURUH MUGHALLAZAH",
+                wallColor: 0xd1fae5, // Zamrud diraja pastel
+                floorColor: 0xfef3c7, // Lantai emas istana kampung
+                accentColor: 0x10b981,
+                initialObjective: "Cari 2 Jubin Simbol untuk buka Peti Peralatan, kemudian laksanakan 7 basuhan!",
+                hint: "Cari 2 Jubin Simbol (Bulan & Bintang) di sekitar dewan untuk membuka Peti Peralatan. Ambil Tanah Suci dan Air Mutlak dari pancuran, lalu sucikan Bekas Utama sebanyak 7 kali (1 air tanah + 6 air mutlak)!",
+                badgeName: "👑 Wira Agung Kampung Bersih",
+                lessonText: "Syabas! Anda telah menguasai semua jenis najis: <strong>Mukhaffafah</strong> (renjisan air), <strong>Mutawassitah</strong> (hilangkan ain & basuh hingga hilang warna, bau, rasa), dan <strong>Mughallazah</strong> (7 basuhan: 1 air tanah + 6 air mutlak)."
+            }
+        ];
+
+        /**
+         * ============================================================================
+         * ENJIN THREE.JS (PEMANDANGAN 3D LOW-POLY CARTOON & WATAK PENYIASAT)
+         * ============================================================================
+         */
+        let scene, camera, renderer, raycaster, mouse;
+        let playerGroup, playerTargetPos = new THREE.Vector3(0, 0, 2.5);
+        let playerLeftLeg, playerRightLeg, playerLeftArm, playerRightArm;
+        let roomGroup, floorMesh;
+        let hoveredObject = null;
+        let clock = new THREE.Clock();
+
+        function initThreeJS() {
+            const canvas = document.getElementById('game-canvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1e1b4b);
+            scene.fog = new THREE.FogExp2(0x1e1b4b, 0.025);
+
+            // Kamera Isometrik / Sudut Tinggi Stabil Mesra Kanak-kanak
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
+            camera.position.set(0, 9.5, 10.5);
+            camera.lookAt(0, 0.8, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Pencahayaan Ceria + Misteri
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.75);
+            dirLight.position.set(6, 12, 8);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x93c5fd, 0.4, 20);
+            pointLight.position.set(-4, 5, -3);
+            scene.add(pointLight);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            roomGroup = new THREE.Group();
+            scene.add(roomGroup);
+
+            createCutePlayer();
+            loadRoom(0);
+
+            // Kawalan Touchpad / Tetikus (Klik Kiri Sahaja)
+            canvas.addEventListener('pointermove', onPointerMove);
+            canvas.addEventListener('pointerdown', onPointerDown);
+            window.addEventListener('resize', onWindowResize);
+
+            animate();
+        }
+
+        // Membina Watak Utama 3D Low-Poly Cartoon (Penyiasat Muda Kampung Bersih)
+        function createCutePlayer() {
+            playerGroup = new THREE.Group();
+
+            // Badan (Baju Melayu / Tunik Penyiasat Hijau Zamrud)
+            const bodyGeo = new THREE.CylinderGeometry(0.32, 0.4, 0.75, 12);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.5 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.75;
+            body.castShadow = true;
+            playerGroup.add(body);
+
+            // Beg Galas Penyiasat (Kuning Ceria)
+            const bagGeo = new THREE.BoxGeometry(0.42, 0.48, 0.25);
+            const bagMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
+            const bag = new THREE.Mesh(bagGeo, bagMat);
+            bag.position.set(0, 0.8, -0.32);
+            bag.castShadow = true;
+            playerGroup.add(bag);
+
+            // Kepala Comel (Chibi)
+            const headGeo = new THREE.SphereGeometry(0.38, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.4 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.42;
+            head.castShadow = true;
+            playerGroup.add(head);
+
+            // Songkok Hitam / Kopiah Kemas
+            const songkokGeo = new THREE.CylinderGeometry(0.31, 0.34, 0.28, 16);
+            const songkokMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+            const songkok = new THREE.Mesh(songkokGeo, songkokMat);
+            songkok.position.y = 1.72;
+            playerGroup.add(songkok);
+
+            // Mata Comel
+            const eyeGeo = new THREE.SphereGeometry(0.055, 8, 8);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(-0.13, 1.44, 0.33);
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+            rightEye.position.set(0.13, 1.44, 0.33);
+            playerGroup.add(leftEye, rightEye);
+
+            // Kaki Kiri & Kanan
+            const legGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.42, 8);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            playerLeftLeg = new THREE.Mesh(legGeo, legMat);
+            playerLeftLeg.position.set(-0.16, 0.21, 0);
+            playerRightLeg = new THREE.Mesh(legGeo, legMat);
+            playerRightLeg.position.set(0.16, 0.21, 0);
+            playerGroup.add(playerLeftLeg, playerRightLeg);
+
+            // Tangan Kiri & Kanan
+            const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.48, 8);
+            playerLeftArm = new THREE.Mesh(armGeo, bodyMat);
+            playerLeftArm.position.set(-0.42, 0.8, 0);
+            playerLeftArm.rotation.z = 0.2;
+            playerRightArm = new THREE.Mesh(armGeo, bodyMat);
+            playerRightArm.position.set(0.42, 0.8, 0);
+            playerRightArm.rotation.z = -0.2;
+            playerGroup.add(playerLeftArm, playerRightArm);
+
+            // Penanda Tapak Bercahaya di bawah watak
+            const ringGeo = new THREE.RingGeometry(0.42, 0.52, 24);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.02;
+            playerGroup.add(ring);
+
+            playerGroup.position.set(0, 0, 2.8);
+            scene.add(playerGroup);
+        }
+
+        /**
+         * ============================================================================
+         * PEMBINAAN PERSEKITARAN 3D BAGI SETIAP 6 BILIK BERBEZA
+         * ============================================================================
+         */
+        function clearRoom() {
+            while (roomGroup.children.length > 0) {
+                roomGroup.remove(roomGroup.children[0]);
+            }
+            GameState.interactables = [];
+            GameState.animations = [];
+            hoveredObject = null;
+            document.getElementById('hover-tooltip').classList.add('hidden');
+        }
+
+        function createBaseRoomShell(wallColor, floorColor, trimColor) {
+            // Lantai Utama
+            const floorGeo = new THREE.BoxGeometry(11, 0.4, 9);
+            const floorMat = new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.7 });
+            floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh.position.y = -0.2;
+            floorMesh.receiveShadow = true;
+            floorMesh.name = "FLOOR";
+            roomGroup.add(floorMesh);
+
+            // Dinding Belakang
+            const backWallGeo = new THREE.BoxGeometry(11.4, 4.2, 0.4);
+            const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.8 });
+            const backWall = new THREE.Mesh(backWallGeo, wallMat);
+            backWall.position.set(0, 2.0, -4.5);
+            backWall.receiveShadow = true;
+            roomGroup.add(backWall);
+
+            // Dinding Kiri
+            const sideWallGeo = new THREE.BoxGeometry(0.4, 4.2, 9.2);
+            const leftWall = new THREE.Mesh(sideWallGeo, wallMat);
+            leftWall.position.set(-5.5, 2.0, 0);
+            leftWall.receiveShadow = true;
+            roomGroup.add(leftWall);
+
+            // Dinding Kanan
+            const rightWall = new THREE.Mesh(sideWallGeo, wallMat);
+            rightWall.position.set(5.5, 2.0, 0);
+            rightWall.receiveShadow = true;
+            roomGroup.add(rightWall);
+
+            // Bingkai Hiasan Dinding
+            const trimGeo = new THREE.BoxGeometry(11.2, 0.25, 0.45);
+            const trimMat = new THREE.MeshStandardMaterial({ color: trimColor });
+            const topTrim = new THREE.Mesh(trimGeo, trimMat);
+            topTrim.position.set(0, 4.0, -4.48);
+            roomGroup.add(topTrim);
+        }
+
+        // Helper untuk mendaftar objek interaktif dengan kawasan klik luas (Hitbox)
+        function registerInteractable(meshGroup, id, label, actionFn, hitboxSize = [1.4, 1.4, 1.4]) {
+            const hitGeo = new THREE.BoxGeometry(hitboxSize[0], hitboxSize[1], hitboxSize[2]);
+            const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+            const hitBox = new THREE.Mesh(hitGeo, hitMat);
+            hitBox.position.y = hitboxSize[1] / 2;
+            meshGroup.add(hitBox);
+
+            // Penunjuk bintang/cincin kecil di lantai supaya murid mudah nampak objek penting
+            const indicatorGeo = new THREE.RingGeometry(0.2, 0.32, 16);
+            const indicatorMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+            const indicator = new THREE.Mesh(indicatorGeo, indicatorMat);
+            indicator.rotation.x = -Math.PI / 2;
+            indicator.position.y = 0.03;
+            meshGroup.add(indicator);
+
+            const itemData = {
+                id,
+                label,
+                group: meshGroup,
+                hitBox,
+                indicator,
+                action: actionFn,
+                enabled: true
+            };
+            hitBox.userData.interactable = itemData;
+            GameState.interactables.push(itemData);
+            roomGroup.add(meshGroup);
+            return itemData;
+        }
+
+        // Helper Membina Pintu Keluar Berkunci
+        function createExitDoor(x, z, keyId, roomIndex) {
+            const doorGroup = new THREE.Group();
+            doorGroup.position.set(x, 0, z);
+
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 2.9, 0.35),
+                new THREE.MeshStandardMaterial({ color: 0x78350f })
+            );
+            frame.position.y = 1.45;
+            doorGroup.add(frame);
+
+            const doorPanel = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 2.7, 0.4),
+                new THREE.MeshStandardMaterial({ color: 0xb45309 })
+            );
+            doorPanel.position.y = 1.4;
+            doorGroup.add(doorPanel);
+
+            // Tombol Kunci Bercahaya
+            const lockMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.18, 12, 12),
+                new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xca8a04 })
+            );
+            lockMesh.position.set(0.5, 1.3, 0.25);
+            doorGroup.add(lockMesh);
+
+            registerInteractable(doorGroup, 'exit_door', 'Pintu Keluar Berkunci', () => {
+                if (GameState.keysCollected[roomIndex]) {
+                    SoundEngine.playUnlock();
+                    showToast("🔓 Pintu terbuka! Syabas penyiasat muda!", "success");
+                    // Animasi pintu berputar terbuka
+                    GameState.animations.push({
+                        mesh: doorPanel,
+                        targetRotY: -Math.PI / 2.2,
+                        speed: 3
+                    });
+                    setTimeout(() => showRoomCompleteModal(roomIndex), 900);
+                } else if (GameState.selectedItemId === keyId) {
+                    GameState.keysCollected[roomIndex] = true;
+                    removeInventoryItem(keyId);
+                    updateKeysHUD();
+                    SoundEngine.playUnlock();
+                    showToast("🔑 Kunci Utama digunakan! Pintu terbuka!", "success");
+                    GameState.animations.push({
+                        mesh: doorPanel,
+                        targetRotY: -Math.PI / 2.2,
+                        speed: 3
+                    });
+                    setTimeout(() => showRoomCompleteModal(roomIndex), 900);
+                } else {
+                    SoundEngine.playError();
+                    showToast("🔒 Pintu ini berkunci! Selesaikan cabaran bilik untuk dapatkan Kunci Utama.", "warning");
+                }
+            }, [1.9, 2.9, 1.2]);
+
+            return doorGroup;
+        }
+
+        // Helper Membina Peti Rahsia
+        function createSecretChest(x, z, id, label, onOpenCallback) {
+            const chestGroup = new THREE.Group();
+            chestGroup.position.set(x, 0, z);
+
+            const base = new THREE.Mesh(
+                new THREE.BoxGeometry(1.2, 0.65, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0x92400e })
+            );
+            base.position.y = 0.325;
+            base.castShadow = true;
+            chestGroup.add(base);
+
+            const lidPivot = new THREE.Group();
+            lidPivot.position.set(0, 0.65, -0.4);
+            const lid = new THREE.Mesh(
+                new THREE.BoxGeometry(1.24, 0.28, 0.84),
+                new THREE.MeshStandardMaterial({ color: 0xd97706 })
+            );
+            lid.position.set(0, 0.14, 0.4);
+            lidPivot.add(lid);
+            chestGroup.add(lidPivot);
+
+            const obj = registerInteractable(chestGroup, id, label, () => {
+                onOpenCallback(lidPivot);
+            }, [1.4, 1.2, 1.2]);
+
+            obj.lidPivot = lidPivot;
+            return obj;
+        }
+
+        /**
+         * ============================================================================
+         * PEMBINAAN TERPERINCI SETIAP 6 BILIK
+         * ============================================================================
+         */
+        function loadRoom(index) {
+            clearRoom();
+            GameState.currentRoom = index;
+            const data = ROOMS_DATA[index];
+            scene.background = new THREE.Color(0x1e1b4b);
+
+            createBaseRoomShell(data.wallColor, data.floorColor, data.accentColor);
+            playerGroup.position.set(0, 0, 3.0);
+            playerTargetPos.set(0, 0, 3.0);
+
+            // Kemas kini HUD Atas
+            document.getElementById('hud-room-badge').innerText = `${index + 1}/6`;
+            document.getElementById('hud-room-title').innerText = data.title;
+            document.getElementById('hud-room-topic').innerText = data.topic;
+            document.getElementById('hud-objective').innerText = data.initialObjective;
+
+            if (index === 0) buildRoom1();
+            else if (index === 1) buildRoom2();
+            else if (index === 2) buildRoom3();
+            else if (index === 3) buildRoom4();
+            else if (index === 4) buildRoom5();
+            else if (index === 5) buildRoom6();
+
+            updateInventoryUI();
+        }
+
+        // ----------------------------------------------------------------------------
+        // BILIK 1: MISTERI TILAM BAYI (NAJIS MUKHAFFAFAH)
+        // ----------------------------------------------------------------------------
+        function buildRoom1() {
+            GameState.roomProgress = {
+                drawerOpened: false,
+                photoInspected: false,
+                bottleCollected: false,
+                mattressCleaned: false,
+                chestOpened: false
+            };
+
+            // 1. Katil Bayi & Tilam Tercemar di Tengah-Kanan
+            const cribGroup = new THREE.Group();
+            cribGroup.position.set(2.2, 0, -1.5);
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(2.4, 0.5, 1.5),
+                new THREE.MeshStandardMaterial({ color: 0xf8fafc })
+            );
+            frame.position.y = 0.25;
+            cribGroup.add(frame);
+
+            const mattress = new THREE.Mesh(
+                new THREE.BoxGeometry(2.2, 0.25, 1.3),
+                new THREE.MeshStandardMaterial({ color: 0xe0f2fe })
+            );
+            mattress.position.y = 0.6;
+            cribGroup.add(mattress);
+
+            // Kesan Tompok Air Kencing Bayi
+            const stainMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, transparent: true, opacity: 0.85 });
+            const stainMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 0.04, 16), stainMat);
+            stainMesh.position.set(0.2, 0.73, 0.1);
+            cribGroup.add(stainMesh);
+
+            registerInteractable(cribGroup, 'baby_mattress', 'Tilam Bayi Tercemar', () => {
+                if (GameState.roomProgress.mattressCleaned) {
+                    showToast("✨ Tilam bayi ini sudah suci dan bersih!", "success");
+                    return;
+                }
+                if (GameState.selectedItemId === 'air_mutlak_r1') {
+                    openSprinkleMiniGame(stainMesh);
+                } else {
+                    openInfoModal("🔍 Siasatan Tilam Bayi", `
+                        <p class="text-base">Terdapat kesan basah kekuningan di atas tilam bayi ini.</p>
+                        <div class="bg-sky-50 p-3 rounded-2xl border border-sky-200 text-sm">
+                            <strong>Petunjuk Penyiasat:</strong> Pastikan anda memeriksa <strong>Nota di dalam Laci</strong> dan <strong>Gambar Bayi di dinding</strong> terlebih dahulu, kemudian cari <strong>Botol Air Mutlak</strong> untuk menyucikannya!
+                        </div>
+                    `);
+                }
+            }, [2.5, 1.2, 1.7]);
+
+            // 2. Almari Laci di Kiri
+            const drawerGroup = new THREE.Group();
+            drawerGroup.position.set(-3.5, 0, -2.5);
+            const cabinet = new THREE.Mesh(
+                new THREE.BoxGeometry(1.4, 1.3, 1.0),
+                new THREE.MeshStandardMaterial({ color: 0x93c5fd })
+            );
+            cabinet.position.y = 0.65;
+            drawerGroup.add(cabinet);
+
+            const drawerFront = new THREE.Mesh(
+                new THREE.BoxGeometry(1.2, 0.45, 0.2),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            drawerFront.position.set(0, 0.9, 0.5);
+            drawerGroup.add(drawerFront);
+
+            registerInteractable(drawerGroup, 'r1_drawer', 'Laci Almari Misteri', () => {
+                if (!GameState.roomProgress.drawerOpened) {
+                    GameState.roomProgress.drawerOpened = true;
+                    GameState.animations.push({ mesh: drawerFront, targetZ: 0.85, speed: 4 });
+                    addInventoryItem({
+                        id: 'nota_bayi',
+                        icon: '📜',
+                        name: 'Nota Maklumat Bayi',
+                        desc: 'Bayi lelaki 10 bulan, hanya minum susu ibu.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                }
+                openInfoModal("📜 Nota Tersembunyi Dalam Laci", `
+                    <div class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl text-amber-950">
+                        <p class="font-bold text-lg mb-1">Catatan Ibu:</p>
+                        <p>"Adik Muhammad berumur <strong>10 bulan</strong> (bayi lelaki). Adik masih menyusu susu ibu sepenuhnya dan <strong>belum mengambil makanan lain</strong> sebagai makanan utama."</p>
+                    </div>
+                    <p class="text-sm text-teal-800 font-bold">💡 Kesimpulan: Air kencing bayi lelaki ini ialah NAJIS MUKHAFFAFAH!</p>
+                `);
+            }, [1.6, 1.5, 1.4]);
+
+            // 3. Gambar Bayi di Dinding Belakang
+            const frameGroup = new THREE.Group();
+            frameGroup.position.set(-1.2, 1.8, -4.2);
+            const picFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(1.3, 1.1, 0.12),
+                new THREE.MeshStandardMaterial({ color: 0xfbbf24 })
+            );
+            const picCanvas = new THREE.Mesh(
+                new THREE.BoxGeometry(1.05, 0.85, 0.14),
+                new THREE.MeshStandardMaterial({ color: 0xe0f2fe })
+            );
+            frameGroup.add(picFrame, picCanvas);
+
+            registerInteractable(frameGroup, 'baby_photo', 'Bingkai Gambar Bayi', () => {
+                GameState.roomProgress.photoInspected = true;
+                SoundEngine.playPickup();
+                openInfoModal("🖼️ Gambar Bayi Muhammad", `
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">👶🍼</div>
+                        <p class="font-bold text-indigo-950">Muhammad bin Abdullah (10 Bulan)</p>
+                        <p class="text-sm text-slate-600 mt-1">Hanya minum susu ibu. Kawasan tilam yang terkena air kencing perlu direnjiskan dengan <strong>Air Mutlak</strong> sehingga merata.</p>
+                    </div>
+                `);
+            }, [1.5, 1.8, 1.0]);
+
+            // 4. Meja Kecil & Botol Air Mutlak Tersembunyi
+            const tableGroup = new THREE.Group();
+            tableGroup.position.set(3.8, 0, 1.2);
+            const tableMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.65, 0.65, 0.8, 16),
+                new THREE.MeshStandardMaterial({ color: 0xfde68a })
+            );
+            tableMesh.position.y = 0.4;
+            tableGroup.add(tableMesh);
+
+            const bottleMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.16, 0.2, 0.55, 12),
+                new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.9 })
+            );
+            bottleMesh.position.y = 1.08;
+            tableGroup.add(bottleMesh);
+
+            registerInteractable(tableGroup, 'r1_bottle', 'Botol Air Mutlak', () => {
+                if (!GameState.roomProgress.bottleCollected) {
+                    GameState.roomProgress.bottleCollected = true;
+                    bottleMesh.visible = false;
+                    addInventoryItem({
+                        id: 'air_mutlak_r1',
+                        icon: '🧴',
+                        name: 'Botol Air Mutlak',
+                        desc: 'Klik pada tilam bayi untuk merenjiskan air mutlak.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("🧴 Botol Air Mutlak dikutip! Pilih dari beg dan klik tilam bayi.", "success");
+                    document.getElementById('hud-objective').innerText = "Pilih Botol Air Mutlak di dalam Beg, kemudian klik Tilam Bayi!";
+                } else {
+                    showToast("Anda sudah mengambil Botol Air Mutlak.", "info");
+                }
+            }, [1.4, 1.4, 1.4]);
+
+            // 5. Peti Rahsia & Pintu Keluar
+            const chest = createSecretChest(-3.6, 1.5, 'r1_chest', 'Peti Rahsia Bilik 1', (lidPivot) => {
+                if (!GameState.roomProgress.mattressCleaned) {
+                    SoundEngine.playError();
+                    showToast("🔒 Peti ini berkunci secara magis! Sucikan tilam bayi dahulu.", "warning");
+                    return;
+                }
+                if (!GameState.roomProgress.chestOpened) {
+                    GameState.roomProgress.chestOpened = true;
+                    GameState.animations.push({ mesh: lidPivot, targetRotX: -Math.PI / 2.3, speed: 4 });
+                    addInventoryItem({
+                        id: 'kunci_1',
+                        icon: '🔑',
+                        name: 'Kunci Pertama',
+                        desc: 'Membuka pintu keluar Bilik 1.'
+                    });
+                    SoundEngine.playUnlock();
+                    addScore(100);
+                    showToast("🎉 Peti terbuka! Anda memperoleh KUNCI PERTAMA!", "success");
+                    document.getElementById('hud-objective').innerText = "Gunakan Kunci Pertama untuk membuka Pintu Keluar!";
+                }
+            });
+            GameState.roomProgress.chestObj = chest;
+
+            createExitDoor(1.5, -4.3, 'kunci_1', 0);
+        }
+
+        // Aktiviti Interaktif Merenjis Air Mutlak (Bilik 1)
+        function openSprinkleMiniGame(stainMesh) {
+            let progress = 0;
+            openInfoModal("💧 Tindakan Penyucian: Merenjis Air Mutlak", `
+                <p class="text-sm text-slate-700 mb-2">Klik butang <strong>RENJIS AIR MUTLAK</strong> berulang kali sehingga air mutlak meratai seluruh kawasan tilam yang terkena air kencing bayi!</p>
+                <div class="relative w-full h-36 bg-sky-100 rounded-2xl border-2 border-sky-300 flex items-center justify-center overflow-hidden mb-3">
+                    <div id="sprinkle-stain" class="w-28 h-20 rounded-full bg-amber-300/90 border-2 border-amber-400 flex items-center justify-center font-bold text-amber-900 text-xs transition-all duration-300">
+                        Kawasan Tercemar
+                    </div>
+                    <div id="sprinkle-droplets" class="absolute inset-0 pointer-events-none flex items-center justify-center text-3xl"></div>
+                </div>
+                <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden mb-3">
+                    <div id="sprinkle-bar" class="bg-sky-500 h-full transition-all duration-200" style="width: 0%"></div>
+                </div>
+                <button id="btn-do-sprinkle" class="w-full py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-game text-lg shadow-md active:scale-95 cursor-pointer">
+                    💦 RENJIS AIR MUTLAK (0%)
+                </button>
+            `);
+
+            document.getElementById('btn-do-sprinkle').onclick = () => {
+                progress += 25;
+                SoundEngine.playSplash();
+                const bar = document.getElementById('sprinkle-bar');
+                const stain = document.getElementById('sprinkle-stain');
+                const drops = document.getElementById('sprinkle-droplets');
+                const btn = document.getElementById('btn-do-sprinkle');
+
+                if (bar) bar.style.width = `${Math.min(100, progress)}%`;
+                if (stain) stain.style.opacity = `${Math.max(0, 1 - progress / 100)}`;
+                if (drops) drops.innerHTML = '💧 💦 💧 💦';
+                if (btn) btn.innerText = `💦 RENJIS AIR MUTLAK (${Math.min(100, progress)}%)`;
+
+                if (progress >= 100) {
+                    GameState.roomProgress.mattressCleaned = true;
+                    stainMesh.visible = false;
+                    spawnSparkles(2.2, 0.9, -1.5, 0x38bdf8);
+                    addScore(100);
+                    setTimeout(() => {
+                        closePuzzleModal();
+                        SoundEngine.playUnlock();
+                        showToast("✨ Tilam bayi telah suci! Peti Rahsia kini boleh dibuka!", "success");
+                        document.getElementById('hud-objective').innerText = "Buka Peti Rahsia di sebelah kiri untuk ambil Kunci Pertama!";
+                    }, 450);
+                }
+            };
+        }
+
+        // ----------------------------------------------------------------------------
+        // BILIK 2: KOD RAHSIA DARAH (NAJIS MUTAWASSITAH)
+        // ----------------------------------------------------------------------------
+        function buildRoom2() {
+            GameState.roomProgress = {
+                cluesFound: 0,
+                ainRemoved: false,
+                waterWashed: false,
+                lockSolved: false
+            };
+
+            // 1. Kesan Darah di Tengah Lantai Kelas
+            const bloodGroup = new THREE.Group();
+            bloodGroup.position.set(0, 0, 0.2);
+            const bloodPuddle = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.65, 0.72, 0.03, 18),
+                new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 })
+            );
+            bloodPuddle.position.y = 0.02;
+            bloodGroup.add(bloodPuddle);
+
+            registerInteractable(bloodGroup, 'r2_blood', 'Kesan Darah di Lantai', () => {
+                if (GameState.roomProgress.waterWashed) {
+                    showToast("✨ Lantai sudah bersih dan suci daripada kesan darah!", "success");
+                    return;
+                }
+                if (!GameState.roomProgress.ainRemoved) {
+                    if (GameState.selectedItemId === 'kain_r2') {
+                        openWipeBloodMiniGame(bloodPuddle);
+                    } else {
+                        SoundEngine.playError();
+                        showToast("⚠️ Terdapat ain najis (darah pekat)! Gunakan KAIN PEMBERSIH dahulu untuk hilangkan ain najis.", "warning");
+                    }
+                } else {
+                    if (GameState.selectedItemId === 'air_r2') {
+                        openWashBloodMiniGame(bloodPuddle);
+                    } else {
+                        showToast("💧 Ain najis sudah dibuang! Sekarang gunakan BEKAS AIR MUTLAK untuk membasuhnya.", "info");
+                    }
+                }
+            }, [1.6, 0.8, 1.6]);
+
+            // 2. Meja Murid & Petunjuk 1 + Kain Pembersih
+            const deskGroup = new THREE.Group();
+            deskGroup.position.set(-3.2, 0, -0.8);
+            const deskTop = new THREE.Mesh(
+                new THREE.BoxGeometry(1.6, 0.12, 1.0),
+                new THREE.MeshStandardMaterial({ color: 0xd97706 })
+            );
+            deskTop.position.y = 0.85;
+            const clothMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(0.45, 0.08, 0.35),
+                new THREE.MeshStandardMaterial({ color: 0x38bdf8 })
+            );
+            clothMesh.position.set(0.3, 0.94, 0.1);
+            deskGroup.add(deskTop, clothMesh);
+
+            registerInteractable(deskGroup, 'r2_desk', 'Meja & Kain Pembersih', () => {
+                if (clothMesh.visible) {
+                    clothMesh.visible = false;
+                    GameState.roomProgress.cluesFound++;
+                    addInventoryItem({
+                        id: 'kain_r2',
+                        icon: '🧻',
+                        name: 'Kain Pembersih',
+                        desc: 'Untuk membuang ain (zat) najis darah.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                }
+                openInfoModal("📜 Petunjuk 1 & Kain Pembersih", `
+                    <p>Anda menjumpai <strong>Kain Pembersih</strong> dan sekeping nota di bawah meja:</p>
+                    <div class="bg-amber-50 p-3 rounded-2xl border border-amber-300 font-bold text-amber-950">
+                        "Langkah 1: Darah ialah Najis Mutawassitah. Buang ain (zat) najisnya terlebih dahulu!"
+                    </div>
+                `);
+            }, [1.7, 1.3, 1.2]);
+
+            // 3. Papan Hitam (Petunjuk 2 + Teka-Teki Visual 3 Sifat Najis)
+            const boardGroup = new THREE.Group();
+            boardGroup.position.set(-1.8, 1.8, -4.2);
+            const boardMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(2.6, 1.4, 0.12),
+                new THREE.MeshStandardMaterial({ color: 0x065f46 })
+            );
+            boardGroup.add(boardMesh);
+
+            registerInteractable(boardGroup, 'r2_board', 'Papan Hitam Kod Sifat Najis', () => {
+                if (!GameState.roomProgress.waterWashed) {
+                    openInfoModal("🧑‍🏫 Papan Hitam Kelas", `
+                        <p class="font-bold text-indigo-950 mb-2">Nota Cikgu di Papan Hitam:</p>
+                        <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-200 text-sm space-y-1">
+                            <p>1. Pastikan lantai dibersihkan daripada darah dahulu.</p>
+                            <p>2. Untuk membuka peti kunci, tetapkan 3 sifat najis yang mesti hilang: <strong>WARNA, BAU, dan RASA</strong>.</p>
+                        </div>
+                    `);
+                } else if (!GameState.roomProgress.lockSolved) {
+                    openRoom2SymbolPuzzle();
+                } else {
+                    showToast("✅ Kod 3 Sifat Najis telah berjaya diselesaikan!", "success");
+                }
+            }, [2.7, 1.8, 1.0]);
+
+            // 4. Rak Buku & Bekas Air Mutlak
+            const shelfGroup = new THREE.Group();
+            shelfGroup.position.set(3.5, 0, -1.8);
+            const shelf = new THREE.Mesh(
+                new THREE.BoxGeometry(1.2, 1.8, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0x92400e })
+            );
+            shelf.position.y = 0.9;
+            const pitcher = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.22, 0.25, 0.5, 12),
+                new THREE.MeshStandardMaterial({ color: 0x0ea5e9 })
+            );
+            pitcher.position.set(0, 2.05, 0);
+            shelfGroup.add(shelf, pitcher);
+
+            registerInteractable(shelfGroup, 'r2_shelf', 'Rak Buku & Bekas Air Mutlak', () => {
+                if (pitcher.visible) {
+                    pitcher.visible = false;
+                    addInventoryItem({
+                        id: 'air_r2',
+                        icon: '🫗',
+                        name: 'Bekas Air Mutlak',
+                        desc: 'Untuk membasuh kesan darah selepas ain najis dibuang.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("🫗 Bekas Air Mutlak & Petunjuk Sifat Najis diperoleh!", "success");
+                }
+                openInfoModal("📚 Buku Panduan Bersuci", `
+                    <p>Di rak buku ini tercatat 3 sifat najis yang wajib dihilangkan setakat yang mampu:</p>
+                    <div class="grid grid-cols-3 gap-2 text-center font-bold text-indigo-950 mt-2">
+                        <div class="bg-rose-100 p-2 rounded-xl">🎨 WARNA</div>
+                        <div class="bg-amber-100 p-2 rounded-xl">👃 BAU</div>
+                        <div class="bg-teal-100 p-2 rounded-xl">👅 RASA</div>
+                    </div>
+                `);
+            }, [1.5, 2.2, 1.2]);
+
+            // 5. Pintu Keluar
+            createExitDoor(2.0, -4.3, 'kunci_2', 1);
+        }
+
+        function openWipeBloodMiniGame(bloodPuddle) {
+            let wipe = 0;
+            openInfoModal("🧻 Langkah 1: Hilangkan Ain Najis", `
+                <p class="text-sm mb-3">Lap dan buang zat/ain darah pekat di lantai menggunakan <strong>Kain Pembersih</strong> terlebih dahulu!</p>
+                <div class="w-full bg-slate-200 h-5 rounded-full overflow-hidden mb-3">
+                    <div id="wipe-bar" class="bg-rose-500 h-full transition-all" style="width:0%"></div>
+                </div>
+                <button id="btn-wipe-blood" class="w-full py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-game text-lg cursor-pointer">
+                    🧻 LAP AIN DARAH (0%)
+                </button>
+            `);
+            document.getElementById('btn-wipe-blood').onclick = () => {
+                wipe += 34;
+                SoundEngine.playWipe();
+                document.getElementById('wipe-bar').style.width = `${Math.min(100, wipe)}%`;
+                document.getElementById('btn-wipe-blood').innerText = `🧻 LAP AIN DARAH (${Math.min(100, wipe)}%)`;
+                if (wipe >= 100) {
+                    GameState.roomProgress.ainRemoved = true;
+                    bloodPuddle.material.color.setHex(0xfca5a5);
+                    bloodPuddle.scale.set(0.7, 1, 0.7);
+                    removeInventoryItem('kain_r2');
+                    addScore(50);
+                    setTimeout(() => {
+                        closePuzzleModal();
+                        showToast("✅ Ain darah telah dibuang! Sekarang pilih BEKAS AIR MUTLAK dan klik lantai.", "success");
+                    }, 350);
+                }
+            };
+        }
+
+        function openWashBloodMiniGame(bloodPuddle) {
+            let wash = 0;
+            openInfoModal("🫗 Langkah 2: Basuh Dengan Air Mutlak", `
+                <p class="text-sm mb-3">Alirkan <strong>Air Mutlak</strong> untuk menghilangkan baki warna, bau dan rasa najis!</p>
+                <div class="w-full bg-slate-200 h-5 rounded-full overflow-hidden mb-3">
+                    <div id="wash-bar" class="bg-sky-500 h-full transition-all" style="width:0%"></div>
+                </div>
+                <button id="btn-wash-blood" class="w-full py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-game text-lg cursor-pointer">
+                    💧 BASUH AIR MUTLAK (0%)
+                </button>
+            `);
+            document.getElementById('btn-wash-blood').onclick = () => {
+                wash += 34;
+                SoundEngine.playSplash();
+                document.getElementById('wash-bar').style.width = `${Math.min(100, wash)}%`;
+                document.getElementById('btn-wash-blood').innerText = `💧 BASUH AIR MUTLAK (${Math.min(100, wash)}%)`;
+                if (wash >= 100) {
+                    GameState.roomProgress.waterWashed = true;
+                    bloodPuddle.visible = false;
+                    spawnSparkles(0, 0.4, 0.2, 0x38bdf8);
+                    addScore(80);
+                    setTimeout(() => {
+                        closePuzzleModal();
+                        showToast("✨ Lantai bersih! Sekarang klik PAPAN HITAM untuk menyelesaikan kod 3 sifat najis.", "success");
+                        document.getElementById('hud-objective').innerText = "Klik Papan Hitam untuk selesaikan teka-teki 3 sifat najis!";
+                    }, 350);
+                }
+            };
+        }
+
+        function openRoom2SymbolPuzzle() {
+            const state = [0, 0, 0];
+            const options = [
+                ["❓ Pilih Sifat 1", "🎨 WARNA", "🪵 KAYU", "🧱 BATU"],
+                ["❓ Pilih Sifat 2", "☁️ ANGIN", "👃 BAU", "🔥 API"],
+                ["❓ Pilih Sifat 3", "👅 RASA", "⚡ KILAT", "🌙 BULAN"]
+            ];
+
+            openInfoModal("🧩 Teka-Teki Visual: 3 Sifat Najis", `
+                <p class="text-sm mb-3">Klik setiap kotak di bawah untuk memadankan <strong>3 sifat najis</strong> yang mesti hilang apabila menyucikan Najis Mutawassitah:</p>
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <button id="slot-0" class="py-4 px-2 rounded-2xl bg-indigo-100 border-2 border-indigo-300 font-bold text-sm cursor-pointer">❓ Pilih Sifat 1</button>
+                    <button id="slot-1" class="py-4 px-2 rounded-2xl bg-indigo-100 border-2 border-indigo-300 font-bold text-sm cursor-pointer">❓ Pilih Sifat 2</button>
+                    <button id="slot-2" class="py-4 px-2 rounded-2xl bg-indigo-100 border-2 border-indigo-300 font-bold text-sm cursor-pointer">❓ Pilih Sifat 3</button>
+                </div>
+                <button id="btn-verify-r2" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-game text-lg cursor-pointer">
+                    🔓 SAHKAN KOD KUNCI
+                </button>
+            `);
+
+            [0, 1, 2].forEach(idx => {
+                document.getElementById(`slot-${idx}`).onclick = () => {
+                    state[idx] = (state[idx] + 1) % 4;
+                    document.getElementById(`slot-${idx}`).innerText = options[idx][state[idx]];
+                    SoundEngine.playStep();
+                };
+            });
+
+            document.getElementById('btn-verify-r2').onclick = () => {
+                if (state[0] === 1 && state[1] === 2 && state[2] === 1) {
+                    GameState.roomProgress.lockSolved = true;
+                    SoundEngine.playUnlock();
+                    addInventoryItem({
+                        id: 'kunci_2',
+                        icon: '🔑',
+                        name: 'Kunci Kedua',
+                        desc: 'Membuka pintu keluar Bilik 2.'
+                    });
+                    addScore(100);
+                    closePuzzleModal();
+                    showToast("🎉 Tepat sekali! Warna, Bau & Rasa! KUNCI KEDUA diperoleh!", "success");
+                    document.getElementById('hud-objective').innerText = "Buka Pintu Keluar menggunakan Kunci Kedua!";
+                } else {
+                    SoundEngine.playError();
+                    showToast("❌ Belum tepat! Ingat 3 sifat najis: Warna, Bau dan Rasa.", "warning");
+                }
+            };
+        }
+
+        // ----------------------------------------------------------------------------
+        // BILIK 3: PETI TUJUH KUNCI (NAJIS MUGHALLAZAH - JILATAN ANJING)
+        // ----------------------------------------------------------------------------
+        function buildRoom3() {
+            GameState.roomProgress = {
+                tanahCollected: false,
+                airCollected: false,
+                washCount: 0,
+                chestOpened: false
+            };
+
+            // 1. Bekas Air Tercemar Jilatan Anjing di Tengah
+            const bowlGroup = new THREE.Group();
+            bowlGroup.position.set(0, 0, -0.3);
+            const pedestal = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.7, 0.85, 0.6, 16),
+                new THREE.MeshStandardMaterial({ color: 0xcbd5e1 })
+            );
+            pedestal.position.y = 0.3;
+            const bowl = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.55, 0.35, 0.35, 16),
+                new THREE.MeshStandardMaterial({ color: 0xf43f5e })
+            );
+            bowl.position.y = 0.75;
+            const bowlLiquid = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.48, 0.48, 0.05, 16),
+                new THREE.MeshStandardMaterial({ color: 0xa3e635 })
+            );
+            bowlLiquid.position.y = 0.91;
+            bowlGroup.add(pedestal, bowl, bowlLiquid);
+
+            registerInteractable(bowlGroup, 'r3_bowl', 'Bekas Air Dijilat Anjing', () => {
+                if (GameState.roomProgress.washCount >= 7) {
+                    showToast("✨ Bekas ini telah suci dengan 7 kali basuhan!", "success");
+                    return;
+                }
+                if (!GameState.roomProgress.tanahCollected || !GameState.roomProgress.airCollected) {
+                    openInfoModal("🐕 Siasatan Bekas Tercemar", `
+                        <p class="mb-2">Terdapat kesan tapak kaki anjing dan bekas air ini telah terkena <strong>jilatan anjing</strong> (Najis Mughallazah).</p>
+                        <div class="bg-purple-50 p-3 rounded-2xl border border-purple-200 text-sm font-bold text-purple-900">
+                            Kumpulkan dahulu <u>Bekas Tanah Suci</u> dan <u>Sumber Air Mutlak</u> di dalam bilik ini!
+                        </div>
+                    `);
+                    return;
+                }
+                openSevenWashStation(bowlLiquid, 3);
+            }, [1.6, 1.4, 1.6]);
+
+            // 2. Pasu Tanah Suci di Kiri
+            const tanahGroup = new THREE.Group();
+            tanahGroup.position.set(-3.4, 0, 0.5);
+            const clayPot = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.45, 0.35, 0.7, 14),
+                new THREE.MeshStandardMaterial({ color: 0x92400e })
+            );
+            clayPot.position.y = 0.35;
+            const soilMound = new THREE.Mesh(
+                new THREE.SphereGeometry(0.38, 12, 8),
+                new THREE.MeshStandardMaterial({ color: 0x78350f })
+            );
+            soilMound.position.y = 0.65;
+            tanahGroup.add(clayPot, soilMound);
+
+            registerInteractable(tanahGroup, 'r3_tanah', 'Bekas Tanah Suci', () => {
+                if (!GameState.roomProgress.tanahCollected) {
+                    GameState.roomProgress.tanahCollected = true;
+                    addInventoryItem({
+                        id: 'tanah_r3',
+                        icon: '🏺',
+                        name: 'Bekas Tanah Suci',
+                        desc: 'Untuk 1 kali basuhan air bercampur tanah suci.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("🏺 Bekas Tanah Suci berjaya dikutip!", "success");
+                } else {
+                    showToast("Bekas Tanah Suci sudah ada di dalam beg anda.", "info");
+                }
+            }, [1.4, 1.3, 1.4]);
+
+            // 3. Sumber Air Mutlak (Tempayan Biru) di Kanan
+            const waterGroup = new THREE.Group();
+            waterGroup.position.set(3.4, 0, 0.5);
+            const jar = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.42, 0.48, 0.85, 16),
+                new THREE.MeshStandardMaterial({ color: 0x0284c7 })
+            );
+            jar.position.y = 0.425;
+            waterGroup.add(jar);
+
+            registerInteractable(waterGroup, 'r3_water', 'Sumber Air Mutlak', () => {
+                if (!GameState.roomProgress.airCollected) {
+                    GameState.roomProgress.airCollected = true;
+                    addInventoryItem({
+                        id: 'air_r3',
+                        icon: '💧',
+                        name: 'Air Mutlak',
+                        desc: 'Untuk 6 kali basuhan air mutlak.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("💧 Sumber Air Mutlak berjaya dikutip!", "success");
+                } else {
+                    showToast("Air Mutlak sudah ada di dalam beg anda.", "info");
+                }
+            }, [1.4, 1.4, 1.4]);
+
+            // 4. Peti Tujuh Kunci
+            createSecretChest(-2.6, -2.8, 'r3_chest', 'Peti Tujuh Kunci', (lidPivot) => {
+                if (GameState.roomProgress.washCount < 7) {
+                    SoundEngine.playError();
+                    showToast(`🔒 Peti Tujuh Kunci masih terkunci (${GameState.roomProgress.washCount}/7 basuhan selesai).`, "warning");
+                    return;
+                }
+                if (!GameState.roomProgress.chestOpened) {
+                    GameState.roomProgress.chestOpened = true;
+                    GameState.animations.push({ mesh: lidPivot, targetRotX: -Math.PI / 2.3, speed: 4 });
+                    addInventoryItem({
+                        id: 'kunci_3',
+                        icon: '🔑',
+                        name: 'Kunci Ketiga',
+                        desc: 'Membuka pintu keluar Bilik 3.'
+                    });
+                    SoundEngine.playUnlock();
+                    addScore(100);
+                    showToast("🎉 Peti Tujuh Kunci terbuka! KUNCI KETIGA diperoleh!", "success");
+                    document.getElementById('hud-objective').innerText = "Gunakan Kunci Ketiga untuk membuka Pintu Keluar!";
+                }
+            });
+
+            // 5. Pintu Keluar
+            createExitDoor(1.8, -4.3, 'kunci_3', 2);
+        }
+
+        // Stesen Interaktif 7 Basuhan Najis Mughallazah (Digunakan di Bilik 3 & Bilik 6)
+        function openSevenWashStation(liquidMesh, roomNum) {
+            const renderStation = () => {
+                const count = GameState.roomProgress.washCount;
+                let slotsHtml = '';
+                for (let i = 1; i <= 7; i++) {
+                    const done = i <= count;
+                    const label = i === 1 ? '1: Air Tanah' : `${i}: Air Mutlak`;
+                    slotsHtml += `
+                        <div class="p-2 rounded-xl border-2 text-center text-xs font-bold ${done ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-slate-100 text-slate-500 border-slate-300'}">
+                            ${done ? '✅' : '⭕'} ${label}
+                        </div>
+                    `;
+                }
+
+                openInfoModal(`🏺 Proses Penyucian Mughallazah (${count}/7)`, `
+                    <p class="text-sm text-slate-700 mb-2">Laksanakan <strong>7 kali basuhan</strong> mengikut urutan: <strong>1x Air Bercampur Tanah Suci</strong> dan <strong>6x Air Mutlak</strong>.</p>
+                    <div class="grid grid-cols-4 gap-1.5 mb-4">
+                        ${slotsHtml}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-wash-tanah" class="py-3.5 px-3 rounded-2xl bg-amber-700 hover:bg-amber-800 text-white font-game text-sm sm:text-base shadow cursor-pointer">
+                            🏺 BASUH AIR TANAH
+                        </button>
+                        <button id="btn-wash-mutlak" class="py-3.5 px-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-game text-sm sm:text-base shadow cursor-pointer">
+                            💧 BASUH AIR MUTLAK
+                        </button>
+                    </div>
+                `);
+
+                document.getElementById('btn-wash-tanah').onclick = () => {
+                    if (GameState.roomProgress.washCount === 0) {
+                        GameState.roomProgress.washCount = 1;
+                        SoundEngine.playSplash();
+                        liquidMesh.material.color.setHex(0xb45309); // Warna air bercampur tanah
+                        renderStation();
+                    } else {
+                        SoundEngine.playError();
+                        showToast("⚠️ Basuhan air bercampur tanah suci hanya dilakukan SEKALI (basuhan pertama)!", "warning");
+                    }
+                };
+
+                document.getElementById('btn-wash-mutlak').onclick = () => {
+                    if (GameState.roomProgress.washCount === 0) {
+                        SoundEngine.playError();
+                        showToast("⚠️ Mulakan basuhan pertama dengan AIR BERCAMPUR TANAH SUCI dahulu!", "warning");
+                        return;
+                    }
+                    if (GameState.roomProgress.washCount < 7) {
+                        GameState.roomProgress.washCount++;
+                        SoundEngine.playSplash();
+                        // Air semakin jernih setiap basuhan
+                        if (GameState.roomProgress.washCount >= 4) liquidMesh.material.color.setHex(0x7dd3fc);
+                        if (GameState.roomProgress.washCount === 7) liquidMesh.material.color.setHex(0xe0f2fe);
+                        
+                        if (GameState.roomProgress.washCount === 7) {
+                            spawnSparkles(0, 1.0, -0.3, 0x38bdf8);
+                            addScore(120);
+                            renderStation();
+                            setTimeout(() => {
+                                closePuzzleModal();
+                                SoundEngine.playUnlock();
+                                if (roomNum === 3) {
+                                    showToast("✨ 7/7 Basuhan Selesai! Buka Peti Tujuh Kunci untuk ambil Kunci Ketiga!", "success");
+                                    document.getElementById('hud-objective').innerText = "Buka Peti Tujuh Kunci untuk memperoleh Kunci Ketiga!";
+                                } else {
+                                    addInventoryItem({
+                                        id: 'kunci_6',
+                                        icon: '🔑',
+                                        name: 'Kunci Keenam (Terakhir)',
+                                        desc: 'Membuka Pintu Utama Kampung Bersih!'
+                                    });
+                                    showToast("👑 7/7 Basuhan Agung Selesai! KUNCI KEENAM diperoleh!", "success");
+                                    document.getElementById('hud-objective').innerText = "Gunakan Kunci Keenam untuk membuka Pintu Utama Kampung Bersih!";
+                                }
+                            }, 550);
+                        } else {
+                            renderStation();
+                        }
+                    }
+                };
+            };
+            renderStation();
+        }
+
+        // ----------------------------------------------------------------------------
+        // BILIK 4: MAKAM PETUNJUK TERSEMBUNYI (PENGUKUHAN NAJIS MUTAWASSITAH)
+        // ----------------------------------------------------------------------------
+        function buildRoom4() {
+            GameState.roomProgress = {
+                shovelCollected: false,
+                waterCollected: false,
+                ainRemoved: false,
+                benchWashed: false,
+                gateSolved: false
+            };
+
+            // 1. Bangku Taman Tercemar Tahi Manusia
+            const benchGroup = new THREE.Group();
+            benchGroup.position.set(0, 0, -0.2);
+            const seat = new THREE.Mesh(
+                new THREE.BoxGeometry(2.2, 0.16, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0xb45309 })
+            );
+            seat.position.y = 0.65;
+            const wasteMesh = new THREE.Mesh(
+                new THREE.ConeGeometry(0.26, 0.25, 10),
+                new THREE.MeshStandardMaterial({ color: 0x713f12 })
+            );
+            wasteMesh.position.set(0.2, 0.82, 0);
+            benchGroup.add(seat, wasteMesh);
+
+            registerInteractable(benchGroup, 'r4_bench', 'Bangku Taman Tercemar', () => {
+                if (GameState.roomProgress.benchWashed) {
+                    showToast("✨ Bangku taman ini sudah suci dan bersih!", "success");
+                    return;
+                }
+                if (!GameState.roomProgress.ainRemoved) {
+                    if (GameState.selectedItemId === 'penyodok_r4') {
+                        GameState.roomProgress.ainRemoved = true;
+                        wasteMesh.scale.set(0.6, 0.15, 0.6);
+                        removeInventoryItem('penyodok_r4');
+                        SoundEngine.playWipe();
+                        addScore(60);
+                        showToast("✅ Ain najis (tahi) telah dibuang menggunakan penyodok! Sekarang siram dengan Air Mutlak.", "success");
+                    } else {
+                        SoundEngine.playError();
+                        showToast("⚠️ Hilangkan ain najis dahulu menggunakan PENYODOK sebelum membasuh dengan air mutlak!", "warning");
+                    }
+                } else {
+                    if (GameState.selectedItemId === 'air_r4') {
+                        GameState.roomProgress.benchWashed = true;
+                        wasteMesh.visible = false;
+                        spawnSparkles(0, 0.9, -0.2, 0x2dd4bf);
+                        SoundEngine.playSplash();
+                        addScore(80);
+                        showToast("✨ Bangku telah disucikan! Kini klik Mekanisme Batu 3 Simbol di dinding.", "success");
+                        document.getElementById('hud-objective').innerText = "Selesaikan Mekanisme Batu 3 Simbol di dinding belakang!";
+                    } else {
+                        showToast("💧 Pilih BEKAS AIR MUTLAK di dalam beg untuk membasuh bangku ini.", "info");
+                    }
+                }
+            }, [2.4, 1.3, 1.2]);
+
+            // 2. Semak Taman & Penyodok Tersembunyi
+            const bushGroup = new THREE.Group();
+            bushGroup.position.set(-3.4, 0, 1.0);
+            const bush = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(0.75),
+                new THREE.MeshStandardMaterial({ color: 0x16a34a })
+            );
+            bush.position.y = 0.6;
+            const shovel = new THREE.Mesh(
+                new THREE.BoxGeometry(0.15, 0.9, 0.25),
+                new THREE.MeshStandardMaterial({ color: 0x94a3b8 })
+            );
+            shovel.position.set(0.45, 0.5, 0.3);
+            shovel.rotation.z = -0.3;
+            bushGroup.add(bush, shovel);
+
+            registerInteractable(bushGroup, 'r4_bush', 'Semak Taman & Penyodok', () => {
+                if (!GameState.roomProgress.shovelCollected) {
+                    GameState.roomProgress.shovelCollected = true;
+                    shovel.visible = false;
+                    addInventoryItem({
+                        id: 'penyodok_r4',
+                        icon: '🧹',
+                        name: 'Penyodok Pembersih',
+                        desc: 'Untuk membuang ain najis pepejal di bangku.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("🧹 Anda menemui Penyodok Pembersih di tepi semak!", "success");
+                } else {
+                    showToast("Tiada lagi barang di semak ini.", "info");
+                }
+            }, [1.6, 1.4, 1.6]);
+
+            // 3. Bekas Air Mutlak di Kanan
+            const waterStone = new THREE.Group();
+            waterStone.position.set(3.4, 0, 0.8);
+            const bucket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.35, 0.28, 0.55, 12),
+                new THREE.MeshStandardMaterial({ color: 0x0ea5e9 })
+            );
+            bucket.position.y = 0.28;
+            waterStone.add(bucket);
+
+            registerInteractable(waterStone, 'r4_water', 'Baldi Air Mutlak', () => {
+                if (!GameState.roomProgress.waterCollected) {
+                    GameState.roomProgress.waterCollected = true;
+                    addInventoryItem({
+                        id: 'air_r4',
+                        icon: '🪣',
+                        name: 'Baldi Air Mutlak',
+                        desc: 'Untuk membasuh bangku selepas ain najis dibuang.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("🪣 Baldi Air Mutlak dikutip!", "success");
+                }
+            }, [1.3, 1.2, 1.3]);
+
+            // 4. Mekanisme Batu 3 Simbol
+            const totemGroup = new THREE.Group();
+            totemGroup.position.set(-2.0, 0, -3.5);
+            const totem = new THREE.Mesh(
+                new THREE.BoxGeometry(1.4, 2.0, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x64748b })
+            );
+            totem.position.y = 1.0;
+            totemGroup.add(totem);
+
+            registerInteractable(totemGroup, 'r4_totem', 'Mekanisme Batu 3 Simbol', () => {
+                if (!GameState.roomProgress.benchWashed) {
+                    SoundEngine.playError();
+                    showToast("🔒 Mekanisme batu ini terkunci! Sucikan bangku taman terlebih dahulu.", "warning");
+                    return;
+                }
+                if (GameState.roomProgress.gateSolved) {
+                    showToast("✅ Kunci Keempat sudah diperoleh!", "success");
+                    return;
+                }
+                openRoom4TotemPuzzle();
+            }, [1.6, 2.1, 1.2]);
+
+            // 5. Pintu Keluar
+            createExitDoor(1.8, -4.3, 'kunci_4', 3);
+        }
+
+        function openRoom4TotemPuzzle() {
+            openInfoModal("🗿 Mekanisme Batu: Susun Urutan Penyucian", `
+                <p class="text-sm mb-3">Klik langkah penyucian Najis Mutawassitah mengikut <strong>urutan yang betul (1 → 2 → 3)</strong>:</p>
+                <div id="r4-seq-display" class="p-3 bg-teal-50 border-2 border-teal-200 rounded-2xl text-center font-bold text-teal-900 mb-3">
+                    Urutan Dipilih: (Belum dipilih)
+                </div>
+                <div class="space-y-2 mb-3">
+                    <button onclick="selectR4Step('Basuh Dengan Air Mutlak')" class="w-full py-3 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-950 font-bold text-sm cursor-pointer">
+                        💧 Basuh Dengan Air Mutlak
+                    </button>
+                    <button onclick="selectR4Step('Buang Ain Najis Dahulu')" class="w-full py-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-sm cursor-pointer">
+                        🧹 Buang Ain Najis Dahulu
+                    </button>
+                    <button onclick="selectR4Step('Hilangkan Warna, Bau & Rasa')" class="w-full py-3 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 font-bold text-sm cursor-pointer">
+                        ✨ Hilangkan Warna, Bau & Rasa
+                    </button>
+                </div>
+            `);
+            window.r4Steps = [];
+        }
+
+        window.selectR4Step = function(stepName) {
+            if (window.r4Steps.includes(stepName)) return;
+            window.r4Steps.push(stepName);
+            SoundEngine.playStep();
+            document.getElementById('r4-seq-display').innerText = window.r4Steps.join(' ➡️ ');
+            if (window.r4Steps.length === 3) {
+                if (
+                    window.r4Steps[0] === 'Buang Ain Najis Dahulu' &&
+                    window.r4Steps[1] === 'Basuh Dengan Air Mutlak' &&
+                    window.r4Steps[2] === 'Hilangkan Warna, Bau & Rasa'
+                ) {
+                    GameState.roomProgress.gateSolved = true;
+                    SoundEngine.playUnlock();
+                    addInventoryItem({
+                        id: 'kunci_4',
+                        icon: '🔑',
+                        name: 'Kunci Keempat',
+                        desc: 'Membuka pintu keluar Bilik 4.'
+                    });
+                    addScore(100);
+                    setTimeout(() => {
+                        closePuzzleModal();
+                        showToast("🎉 Urutan tepat! Mekanisme terbuka dan memberi KUNCI KEEMPAT!", "success");
+                        document.getElementById('hud-objective').innerText = "Buka Pintu Keluar menggunakan Kunci Keempat!";
+                    }, 400);
+                } else {
+                    SoundEngine.playError();
+                    showToast("❌ Urutan kurang tepat! Cuba lagi: Buang ain najis dahulu.", "warning");
+                    window.r4Steps = [];
+                    document.getElementById('r4-seq-display').innerText = "Urutan Dipilih: (Cuba semula)";
+                }
+            }
+        };
+
+        // ----------------------------------------------------------------------------
+        // BILIK 5: MISI PAKAIAN TERCEMAR (BEZA MUKHAFFAFAH VS MUTAWASSITAH)
+        // ----------------------------------------------------------------------------
+        function buildRoom5() {
+            GameState.roomProgress = {
+                noteRead: false,
+                kitCollected: false,
+                shirtCleaned: false
+            };
+
+            // 1. Meja Jahit & Nota Pelanggan
+            const noteTable = new THREE.Group();
+            noteTable.position.set(-3.0, 0, -1.5);
+            const tbl = new THREE.Mesh(
+                new THREE.BoxGeometry(1.6, 0.85, 1.0),
+                new THREE.MeshStandardMaterial({ color: 0xfdba74 })
+            );
+            tbl.position.y = 0.425;
+            const notePaper = new THREE.Mesh(
+                new THREE.BoxGeometry(0.45, 0.03, 0.35),
+                new THREE.MeshStandardMaterial({ color: 0xffffff })
+            );
+            notePaper.position.y = 0.87;
+            noteTable.add(tbl, notePaper);
+
+            registerInteractable(noteTable, 'r5_note', 'Nota Pelanggan Kedai Dobi', () => {
+                GameState.roomProgress.noteRead = true;
+                SoundEngine.playPickup();
+                openInfoModal("📋 Nota Pelanggan Dobi", `
+                    <div class="bg-orange-50 border-2 border-orange-300 p-4 rounded-2xl text-orange-950">
+                        <p class="font-bold text-lg mb-1">Maklumat Baju Pelanggan:</p>
+                        <p>"Baju kemeja ini milik <strong>Encik Kamal (Orang Dewasa)</strong> yang terkena percikan <strong>air kencing</strong> semasa menjaga pesakit di hospital."</p>
+                    </div>
+                    <p class="text-sm font-bold text-indigo-900 mt-2">🤔 Fikirkan: Adakah air kencing orang dewasa ini Najis Mukhaffafah atau Najis Mutawassitah?</p>
+                `);
+            }, [1.7, 1.3, 1.2]);
+
+            // 2. Bakul Dobi (Kain Lap & Bekas Air Mutlak)
+            const basketGroup = new THREE.Group();
+            basketGroup.position.set(3.2, 0, 0.6);
+            const basket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.55, 0.42, 0.75, 14),
+                new THREE.MeshStandardMaterial({ color: 0xfb7185 })
+            );
+            basket.position.y = 0.375;
+            basketGroup.add(basket);
+
+            registerInteractable(basketGroup, 'r5_basket', 'Bakul Peralatan Dobi', () => {
+                if (!GameState.roomProgress.kitCollected) {
+                    GameState.roomProgress.kitCollected = true;
+                    addInventoryItem({
+                        id: 'set_basuh_r5',
+                        icon: '🧺',
+                        name: 'Set Cucian Air Mutlak',
+                        desc: 'Kain lap & air mutlak untuk membasuh pakaian.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(60);
+                    showToast("🧺 Anda menjumpai Set Cucian Air Mutlak dalam bakul dobi!", "success");
+                } else {
+                    showToast("Set cucian sudah berada dalam beg anda.", "info");
+                }
+            }, [1.4, 1.3, 1.4]);
+
+            // 3. Meja Cucian Pakaian Tercemar di Tengah
+            const shirtTable = new THREE.Group();
+            shirtTable.position.set(0, 0, 0.2);
+            const sTbl = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.8, 1.2),
+                new THREE.MeshStandardMaterial({ color: 0xfef3c7 })
+            );
+            sTbl.position.y = 0.4;
+            const shirt = new THREE.Mesh(
+                new THREE.BoxGeometry(0.95, 0.08, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0x93c5fd })
+            );
+            shirt.position.y = 0.85;
+            const stain = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.25, 0.25, 0.03, 12),
+                new THREE.MeshStandardMaterial({ color: 0xeab308 })
+            );
+            stain.position.set(0.1, 0.9, 0.05);
+            shirtTable.add(sTbl, shirt, stain);
+
+            registerInteractable(shirtTable, 'r5_shirt', 'Baju Pelanggan Tercemar', () => {
+                if (GameState.roomProgress.shirtCleaned) {
+                    showToast("✨ Baju ini sudah suci dan bersih!", "success");
+                    return;
+                }
+                if (!GameState.roomProgress.noteRead) {
+                    SoundEngine.playError();
+                    showToast("📋 Baca Nota Pelanggan di meja kiri dahulu supaya anda tahu jenis najisnya!", "warning");
+                    return;
+                }
+                if (GameState.selectedItemId !== 'set_basuh_r5') {
+                    showToast("🧺 Ambil dan pilih Set Cucian Air Mutlak daripada Bakul Dobi dahulu!", "info");
+                    return;
+                }
+                openRoom5LaundryAction(stain);
+            }, [1.9, 1.3, 1.4]);
+
+            // 4. Pintu Keluar
+            createExitDoor(0, -4.3, 'kunci_5', 4);
+        }
+
+        function openRoom5LaundryAction(stainMesh) {
+            openInfoModal("👕 Tindakan Penyucian Pakaian", `
+                <p class="text-sm mb-3">Berdasarkan Nota Pelanggan, baju ini terkena <strong>air kencing orang dewasa</strong>. Pilih tindakan penyucian yang tepat:</p>
+                <div class="space-y-3">
+                    <button id="btn-r5-wrong" class="w-full py-3.5 px-4 rounded-2xl bg-sky-100 hover:bg-sky-200 text-sky-950 font-bold text-sm text-left cursor-pointer border-2 border-sky-300">
+                        💦 Tindakan A: Renjis air sedikit sahaja (Cara Najis Mukhaffafah)
+                    </button>
+                    <button id="btn-r5-right" class="w-full py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm text-left cursor-pointer shadow">
+                        🧼 Tindakan B: Lap kawasan terkena najis & basuh menggunakan Air Mutlak hingga hilang warna, bau dan rasa (Cara Najis Mutawassitah)
+                    </button>
+                </div>
+            `);
+
+            document.getElementById('btn-r5-wrong').onclick = () => {
+                SoundEngine.playError();
+                showToast("⚠️ Tidak tepat! Air kencing orang dewasa ialah Najis Mutawassitah, bukan Mukhaffafah.", "warning");
+            };
+
+            document.getElementById('btn-r5-right').onclick = () => {
+                GameState.roomProgress.shirtCleaned = true;
+                stainMesh.visible = false;
+                spawnSparkles(0, 1.0, 0.2, 0xfbbf24);
+                SoundEngine.playUnlock();
+                addInventoryItem({
+                    id: 'kunci_5',
+                    icon: '🔑',
+                    name: 'Kunci Kelima',
+                    desc: 'Membuka pintu keluar Bilik 5.'
+                });
+                addScore(120);
+                closePuzzleModal();
+                showToast("🎉 Tepat sekali! Baju suci dan KUNCI KELIMA diperoleh!", "success");
+                document.getElementById('hud-objective').innerText = "Gunakan Kunci Kelima untuk menuju ke Bilik Terakhir!";
+            };
+        }
+
+        // ----------------------------------------------------------------------------
+        // BILIK 6: PINTU AKHIR TUJUH BASUHAN (APLIKASI MENYELURUH MUGHALLAZAH)
+        // ----------------------------------------------------------------------------
+        function buildRoom6() {
+            GameState.roomProgress = {
+                tile1Found: false,
+                tile2Found: false,
+                chestOpened: false,
+                washCount: 0
+            };
+
+            // 1. Jubin Simbol Bulan di Kiri Depan
+            const tile1Group = new THREE.Group();
+            tile1Group.position.set(-3.6, 0, 1.5);
+            const t1 = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6, 0.15, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0x854d0e })
+            );
+            t1.position.y = 0.08;
+            tile1Group.add(t1);
+
+            registerInteractable(tile1Group, 'r6_tile1', 'Jubin Simbol Bulan', () => {
+                if (!GameState.roomProgress.tile1Found) {
+                    GameState.roomProgress.tile1Found = true;
+                    t1.visible = false;
+                    addInventoryItem({
+                        id: 'jubin_1',
+                        icon: '🌙',
+                        name: 'Jubin Bulan Emas',
+                        desc: 'Sebahagian kunci untuk membuka Peti Peralatan.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("🌙 Jubin Bulan Emas ditemui!", "success");
+                }
+            }, [1.2, 0.9, 1.2]);
+
+            // 2. Jubin Simbol Bintang di Kanan Depan
+            const tile2Group = new THREE.Group();
+            tile2Group.position.set(3.6, 0, 1.5);
+            const t2 = new THREE.Mesh(
+                new THREE.BoxGeometry(0.6, 0.15, 0.6),
+                new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0369a1 })
+            );
+            t2.position.y = 0.08;
+            tile2Group.add(t2);
+
+            registerInteractable(tile2Group, 'r6_tile2', 'Jubin Simbol Bintang', () => {
+                if (!GameState.roomProgress.tile2Found) {
+                    GameState.roomProgress.tile2Found = true;
+                    t2.visible = false;
+                    addInventoryItem({
+                        id: 'jubin_2',
+                        icon: '⭐',
+                        name: 'Jubin Bintang Biru',
+                        desc: 'Sebahagian kunci untuk membuka Peti Peralatan.'
+                    });
+                    SoundEngine.playPickup();
+                    addScore(50);
+                    showToast("⭐ Jubin Bintang Biru ditemui!", "success");
+                }
+            }, [1.2, 0.9, 1.2]);
+
+            // 3. Peti Peralatan Agung (Menyimpan Tanah Suci & Air Mutlak)
+            createSecretChest(-2.8, -1.8, 'r6_chest', 'Peti Peralatan Agung', (lidPivot) => {
+                if (!GameState.roomProgress.tile1Found || !GameState.roomProgress.tile2Found) {
+                    SoundEngine.playError();
+                    showToast("🔒 Peti Peralatan memerlukan 2 Jubin Simbol (Bulan & Bintang) yang tersembunyi di dewan ini!", "warning");
+                    return;
+                }
+                if (!GameState.roomProgress.chestOpened) {
+                    GameState.roomProgress.chestOpened = true;
+                    GameState.animations.push({ mesh: lidPivot, targetRotX: -Math.PI / 2.3, speed: 4 });
+                    removeInventoryItem('jubin_1');
+                    removeInventoryItem('jubin_2');
+                    addInventoryItem({
+                        id: 'tanah_r6',
+                        icon: '🏺',
+                        name: 'Bekas Tanah Suci',
+                        desc: 'Untuk 1 basuhan air bercampur tanah suci.'
+                    });
+                    addInventoryItem({
+                        id: 'air_r6',
+                        icon: '💧',
+                        name: 'Kendi Air Mutlak',
+                        desc: 'Untuk 6 basuhan air mutlak.'
+                    });
+                    SoundEngine.playUnlock();
+                    addScore(80);
+                    showToast("🎉 Peti Peralatan terbuka! Tanah Suci & Air Mutlak diperoleh!", "success");
+                    document.getElementById('hud-objective').innerText = "Sucikan Bekas Utama di tengah dewan dengan 7 kali basuhan!";
+                }
+            });
+
+            // 4. Bekas Utama Tercemar Jilatan Anjing
+            const altarGroup = new THREE.Group();
+            altarGroup.position.set(0.5, 0, -0.5);
+            const altarBase = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.8, 0.95, 0.7, 16),
+                new THREE.MeshStandardMaterial({ color: 0xfde68a })
+            );
+            altarBase.position.y = 0.35;
+            const sacredVessel = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.6, 0.4, 0.4, 16),
+                new THREE.MeshStandardMaterial({ color: 0x059669 })
+            );
+            sacredVessel.position.y = 0.85;
+            const liquid = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.52, 0.52, 0.06, 16),
+                new THREE.MeshStandardMaterial({ color: 0xfacc15 })
+            );
+            liquid.position.y = 1.03;
+            altarGroup.add(altarBase, sacredVessel, liquid);
+
+            registerInteractable(altarGroup, 'r6_vessel', 'Bekas Utama Tercemar Jilatan Anjing', () => {
+                if (!GameState.roomProgress.chestOpened) {
+                    SoundEngine.playError();
+                    showToast("⚠️ Buka Peti Peralatan dahulu untuk mendapatkan Tanah Suci & Air Mutlak!", "warning");
+                    return;
+                }
+                if (GameState.roomProgress.washCount >= 7) {
+                    showToast("✨ Bekas Utama telah suci sepenuhnya! Buka Pintu Utama Kampung Bersih!", "success");
+                    return;
+                }
+                openSevenWashStation(liquid, 6);
+            }, [1.8, 1.5, 1.8]);
+
+            // 5. Pintu Utama Kampung Bersih
+            createExitDoor(0, -4.3, 'kunci_6', 5);
+        }
+
+        /**
+         * ============================================================================
+         * KAWALAN PERGERAKAN WATAK & INTERAKSI KLIK (TOUCHPAD FRIENDLY)
+         * ============================================================================
+         */
+        function getPointerNDC(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        }
+
+        function onPointerMove(event) {
+            if (!GameState.started || GameState.paused) return;
+            getPointerNDC(event);
+            raycaster.setFromCamera(mouse, camera);
+
+            const hitBoxes = GameState.interactables.map(i => i.hitBox);
+            const intersects = raycaster.intersectObjects(hitBoxes);
+            const tooltip = document.getElementById('hover-tooltip');
+
+            if (intersects.length > 0) {
+                const item = intersects[0].object.userData.interactable;
+                hoveredObject = item;
+                document.body.style.cursor = 'pointer';
+                tooltip.classList.remove('hidden');
+                tooltip.style.left = `${event.clientX}px`;
+                tooltip.style.top = `${event.clientY - 12}px`;
+                document.getElementById('hover-tooltip-text').innerText = item.label;
+            } else {
+                hoveredObject = null;
+                document.body.style.cursor = 'default';
+                tooltip.classList.add('hidden');
+            }
+        }
+
+        function onPointerDown(event) {
+            if (!GameState.started || GameState.paused) return;
+            if (event.button !== 0 && event.pointerType === 'mouse') return; // Hanya klik kiri / sentuhan
+
+            getPointerNDC(event);
+            raycaster.setFromCamera(mouse, camera);
+
+            // 1. Semak jika klik pada objek interaktif
+            const hitBoxes = GameState.interactables.map(i => i.hitBox);
+            const objIntersects = raycaster.intersectObjects(hitBoxes);
+
+            if (objIntersects.length > 0) {
+                const item = objIntersects[0].object.userData.interactable;
+                const objPos = item.group.position;
+                // Gerakkan watak menghampiri objek, kemudian jalankan aksi
+                playerTargetPos.set(
+                    THREE.MathUtils.clamp(objPos.x, -4.3, 4.3),
+                    0,
+                    THREE.MathUtils.clamp(objPos.z + 1.1, -3.5, 3.6)
+                );
+                item.action();
+                return;
+            }
+
+            // 2. Jika klik pada lantai, gerakkan watak ke lokasi tersebut
+            if (floorMesh) {
+                const floorIntersects = raycaster.intersectObject(floorMesh);
+                if (floorIntersects.length > 0) {
+                    const pt = floorIntersects[0].point;
+                    playerTargetPos.set(
+                        THREE.MathUtils.clamp(pt.x, -4.5, 4.5),
+                        0,
+                        THREE.MathUtils.clamp(pt.z, -3.6, 3.8)
+                    );
+                    spawnClickRing(playerTargetPos.x, playerTargetPos.z);
+                    SoundEngine.playStep();
+                }
+            }
+        }
+
+        function triggerNearestInteraction() {
+            if (GameState.interactables.length === 0) return;
+            let nearest = null;
+            let minDist = Infinity;
+
+            GameState.interactables.forEach(item => {
+                const dist = playerGroup.position.distanceTo(item.group.position);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = item;
+                }
+            });
+
+            if (nearest) {
+                const objPos = nearest.group.position;
+                playerTargetPos.set(
+                    THREE.MathUtils.clamp(objPos.x, -4.3, 4.3),
+                    0,
+                    THREE.MathUtils.clamp(objPos.z + 1.1, -3.5, 3.6)
+                );
+                nearest.action();
+            }
+        }
+
+        // Kesan visual cincin klik di lantai
+        function spawnClickRing(x, z) {
+            const geo = new THREE.RingGeometry(0.1, 0.35, 20);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+            const ring = new THREE.Mesh(geo, mat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.set(x, 0.04, z);
+            roomGroup.add(ring);
+            GameState.particles.push({ mesh: ring, life: 0.5, scaleSpeed: 2.5 });
+        }
+
+        function spawnSparkles(x, y, z, colorHex) {
+            for (let i = 0; i < 12; i++) {
+                const geo = new THREE.OctahedronGeometry(0.12);
+                const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+                const spark = new THREE.Mesh(geo, mat);
+                spark.position.set(
+                    x + (Math.random() - 0.5) * 1.2,
+                    y + Math.random() * 0.8,
+                    z + (Math.random() - 0.5) * 1.2
+                );
+                roomGroup.add(spark);
+                GameState.particles.push({ mesh: spark, life: 0.9, vy: 1.5 });
+            }
+        }
+
+        /**
+         * ============================================================================
+         * GELUNG ANIMASI UTAMA (GAME LOOP)
+         * ============================================================================
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
+
+            // 1. Pergerakan Lancar Watak Utama
+            if (playerGroup) {
+                const dist = playerGroup.position.distanceTo(playerTargetPos);
+                if (dist > 0.08) {
+                    const dir = new THREE.Vector3().subVectors(playerTargetPos, playerGroup.position).normalize();
+                    playerGroup.position.addScaledVector(dir, Math.min(dist, 5.2 * delta));
+                    
+                    // Pusingkan watak menghadap arah tujuan
+                    const targetAngle = Math.atan2(dir.x, dir.z);
+                    playerGroup.rotation.y = targetAngle;
+
+                    // Animasi hayunan kaki & tangan berjalan
+                    playerLeftLeg.rotation.x = Math.sin(elapsed * 14) * 0.55;
+                    playerRightLeg.rotation.x = -Math.sin(elapsed * 14) * 0.55;
+                    playerLeftArm.rotation.x = -Math.sin(elapsed * 14) * 0.45;
+                    playerRightArm.rotation.x = Math.sin(elapsed * 14) * 0.45;
+                } else {
+                    playerLeftLeg.rotation.x = 0;
+                    playerRightLeg.rotation.x = 0;
+                    playerLeftArm.rotation.x = 0;
+                    playerRightArm.rotation.x = 0;
+                }
+            }
+
+            // 2. Denyutan Cincin Petunjuk Objek Interaktif & Kemas Kini Butang Interaksi
+            let closestItem = null;
+            let closestDist = 999;
+            GameState.interactables.forEach(item => {
+                if (item.indicator) {
+                    const s = 1 + Math.sin(elapsed * 4) * 0.15;
+                    item.indicator.scale.set(s, s, 1);
+                }
+                if (playerGroup) {
+                    const d = playerGroup.position.distanceTo(item.group.position);
+                    if (d < closestDist) {
+                        closestDist = d;
+                        closestItem = item;
+                    }
+                }
+            });
+
+            if (closestItem && closestDist < 3.0) {
+                document.getElementById('btn-interact-label').innerText = `PERIKSA: ${closestItem.label.toUpperCase()}`;
+            } else {
+                document.getElementById('btn-interact-label').innerText = "INTERAKSI";
+            }
+
+            // 3. Animasi Laci, Peti & Pintu Terbuka
+            for (let i = GameState.animations.length - 1; i >= 0; i--) {
+                const anim = GameState.animations[i];
+                if (anim.targetZ !== undefined) {
+                    anim.mesh.position.z = THREE.MathUtils.lerp(anim.mesh.position.z, anim.targetZ, delta * anim.speed);
+                }
+                if (anim.targetRotX !== undefined) {
+                    anim.mesh.rotation.x = THREE.MathUtils.lerp(anim.mesh.rotation.x, anim.targetRotX, delta * anim.speed);
+                }
+                if (anim.targetRotY !== undefined) {
+                    anim.mesh.rotation.y = THREE.MathUtils.lerp(anim.mesh.rotation.y, anim.targetRotY, delta * anim.speed);
+                }
+            }
+
+            // 4. Zarah Kesan Khas
+            for (let i = GameState.particles.length - 1; i >= 0; i--) {
+                const p = GameState.particles[i];
+                p.life -= delta;
+                if (p.scaleSpeed) {
+                    p.mesh.scale.addScalar(delta * p.scaleSpeed);
+                    p.mesh.material.opacity = Math.max(0, p.life * 2);
+                }
+                if (p.vy) {
+                    p.mesh.position.y += p.vy * delta;
+                    p.mesh.rotation.y += 3 * delta;
+                }
+                if (p.life <= 0) {
+                    roomGroup.remove(p.mesh);
+                    GameState.particles.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        /**
+         * ============================================================================
+         * PENGURUSAN UI, INVENTORI, MODAL & SIJIL DIGITAL
+         * ============================================================================
+         */
+        function startGame() {
+            SoundEngine.init();
+            SoundEngine.playUnlock();
+            SoundEngine.startBGM();
+            GameState.started = true;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('top-hud').classList.remove('hidden');
+            document.getElementById('bottom-hud').classList.remove('hidden');
+
+            updateKeysHUD();
+            startTimer();
+            showToast("🕵️ Selamat datang ke Bilik 1! Klik objek untuk menyiasat.", "info");
+        }
+
+        function startTimer() {
+            if (GameState.timerInterval) clearInterval(GameState.timerInterval);
+            GameState.timerInterval = setInterval(() => {
+                if (!GameState.paused) {
+                    GameState.secondsElapsed++;
+                    const remaining = Math.max(0, 900 - GameState.secondsElapsed); // 15 minit
+                    const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
+                    const secs = String(remaining % 60).padStart(2, '0');
+                    document.getElementById('hud-timer').innerText = `${mins}:${secs}`;
+                }
+            }, 1000);
+        }
+
+        function addScore(pts) {
+            GameState.score += pts;
+            document.getElementById('hud-score').innerText = GameState.score;
+        }
+
+        function updateKeysHUD() {
+            const container = document.getElementById('keys-progress-container');
+            container.innerHTML = '';
+            GameState.keysCollected.forEach((unlocked, idx) => {
+                const badge = document.createElement('div');
+                badge.className = `w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border ${
+                    unlocked ? 'bg-amber-400 text-amber-950 border-amber-500 shadow' : 'bg-slate-200 text-slate-400 border-slate-300'
+                }`;
+                badge.innerText = unlocked ? '🔑' : (idx + 1);
+                container.appendChild(badge);
+            });
+        }
+
+        function addInventoryItem(item) {
+            if (GameState.inventory.some(i => i.id === item.id)) return;
+            GameState.inventory.push(item);
+            GameState.selectedItemId = item.id; // Auto-pilih barang baru dikutip supaya mudah untuk murid
+            updateInventoryUI();
+        }
+
+        function removeInventoryItem(id) {
+            GameState.inventory = GameState.inventory.filter(i => i.id !== id);
+            if (GameState.selectedItemId === id) {
+                GameState.selectedItemId = GameState.inventory.length > 0 ? GameState.inventory[0].id : null;
+            }
+            updateInventoryUI();
+        }
+
+        function selectInventoryItem(id) {
+            SoundEngine.playStep();
+            GameState.selectedItemId = (GameState.selectedItemId === id) ? null : id;
+            updateInventoryUI();
+        }
+
+        function updateInventoryUI() {
+            const container = document.getElementById('inventory-slots');
+            container.innerHTML = '';
+
+            // Papar minimum 5 slot kemas
+            const totalSlots = Math.max(5, GameState.inventory.length);
+            for (let i = 0; i < totalSlots; i++) {
+                const item = GameState.inventory[i];
+                const slot = document.createElement('button');
+                if (item) {
+                    const isSelected = GameState.selectedItemId === item.id;
+                    slot.className = `w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 transition cursor-pointer border-2 ${
+                        isSelected
+                            ? 'bg-amber-100 border-amber-500 ring-4 ring-amber-300/60 scale-105'
+                            : 'bg-white border-indigo-200 hover:border-indigo-400'
+                    }`;
+                    slot.innerHTML = `
+                        <span class="text-2xl sm:text-3xl leading-none">${item.icon}</span>
+                        <span class="text-[9px] font-extrabold text-slate-700 truncate w-12 mt-0.5">${item.name}</span>
+                    `;
+                    slot.onclick = () => selectInventoryItem(item.id);
+                } else {
+                    slot.className = "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100/80 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-300 text-xs shrink-0";
+                    slot.innerText = "•";
+                }
+                container.appendChild(slot);
+            }
+
+            const selected = GameState.inventory.find(i => i.id === GameState.selectedItemId);
+            const nameEl = document.getElementById('selected-item-name');
+            const descEl = document.getElementById('selected-item-desc');
+            if (selected) {
+                nameEl.innerText = `${selected.icon} ${selected.name}`;
+                descEl.innerText = selected.desc;
+            } else {
+                nameEl.innerText = "Tiada Barang Dipilih";
+                descEl.innerText = "Klik barang dalam beg untuk menggunakannya.";
+            }
+        }
+
+        let toastTimeout;
+        function showToast(msg, type = "info") {
+            const banner = document.getElementById('toast-banner');
+            const box = document.getElementById('toast-box');
+            banner.classList.remove('hidden');
+
+            if (type === "success") {
+                box.className = "rounded-2xl px-5 py-3 shadow-2xl border-2 text-center font-bold text-sm sm:text-base bg-emerald-500 text-white border-emerald-200";
+            } else if (type === "warning") {
+                box.className = "rounded-2xl px-5 py-3 shadow-2xl border-2 text-center font-bold text-sm sm:text-base bg-amber-400 text-amber-950 border-amber-100";
+            } else {
+                box.className = "rounded-2xl px-5 py-3 shadow-2xl border-2 text-center font-bold text-sm sm:text-base bg-indigo-900 text-white border-indigo-400";
+            }
+
+            box.innerText = msg;
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 4000);
+        }
+
+        function showHint() {
+            const data = ROOMS_DATA[GameState.currentRoom];
+            SoundEngine.playPickup();
+            openInfoModal(`💡 Petunjuk Bilik ${GameState.currentRoom + 1}`, `
+                <div class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl text-amber-950 text-base leading-relaxed">
+                    ${data.hint}
+                </div>
+            `);
+        }
+
+        function openInfoModal(title, bodyHtml) {
+            GameState.paused = true;
+            document.getElementById('puzzle-modal-title').innerText = title;
+            document.getElementById('puzzle-modal-body').innerHTML = bodyHtml;
+            document.getElementById('puzzle-modal').classList.remove('hidden');
+        }
+
+        function closePuzzleModal() {
+            GameState.paused = false;
+            document.getElementById('puzzle-modal').classList.add('hidden');
+        }
+
+        function showRoomCompleteModal(roomIdx) {
+            GameState.paused = true;
+            const data = ROOMS_DATA[roomIdx];
+            addScore(200);
+
+            document.getElementById('complete-title').innerText = `${data.title} SELESAI!`;
+            document.getElementById('complete-badge-name').innerText = data.badgeName;
+            document.getElementById('complete-lesson-text').innerHTML = data.lessonText;
+            document.getElementById('complete-key-num').innerText = `${roomIdx + 1} / 6`;
+
+            const nextBtn = document.querySelector('#room-complete-modal button');
+            nextBtn.innerText = roomIdx < 5 ? "MASUK KE BILIK SETERUSNYA ➡️" : "🏆 LIHAT KEMENANGAN & SIJIL DIGITAL";
+
+            document.getElementById('room-complete-modal').classList.remove('hidden');
+        }
+
+        function proceedToNextRoom() {
+            document.getElementById('room-complete-modal').classList.add('hidden');
+            GameState.paused = false;
+
+            if (GameState.currentRoom < 5) {
+                // Kosongkan barang khusus bilik lepas tetapi kekalkan kunci yang dikumpul
+                GameState.inventory = GameState.inventory.filter(i => i.id.startsWith('kunci_'));
+                GameState.selectedItemId = null;
+                loadRoom(GameState.currentRoom + 1);
+                showToast(`🚪 Memasuki ${ROOMS_DATA[GameState.currentRoom].title}`, "info");
+            } else {
+                showVictoryScreen();
+            }
+        }
+
+        function showVictoryScreen() {
+            clearInterval(GameState.timerInterval);
+            SoundEngine.playUnlock();
+            document.getElementById('top-hud').classList.add('hidden');
+            document.getElementById('bottom-hud').classList.add('hidden');
+
+            const mins = String(Math.floor(GameState.secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(GameState.secondsElapsed % 60).padStart(2, '0');
+            document.getElementById('final-score').innerText = GameState.score;
+            document.getElementById('final-time').innerText = `${mins}:${secs}`;
+
+            document.getElementById('victory-screen').classList.remove('hidden');
+        }
+
+        function updateCertificateName(val) {
+            const el = document.getElementById('cert-student-name');
+            el.innerText = val.trim() ? val.trim().toUpperCase() : "PENYIASAT MUDA KAMPUNG BERSIH";
+        }
+
+        function downloadCertificateImage() {
+            // Lukis Sijil Digital di atas kanvas 2D untuk muat turun PNG yang cantik
+            const c = document.createElement('canvas');
+            c.width = 1200;
+            c.height = 850;
+            const ctx = c.getContext('2d');
+
+            // Latar Belakang Emas Lembut
+            const grad = ctx.createLinearGradient(0, 0, 1200, 850);
+            grad.addColorStop(0, '#fffbeb');
+            grad.addColorStop(0.5, '#fef3c7');
+            grad.addColorStop(1, '#fde68a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1200, 850);
+
+            // Bingkai Berganda
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 24;
+            ctx.strokeRect(30, 30, 1140, 790);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(55, 55, 1090, 740);
+
+            // Teks Sijil
+            ctx.fillStyle = '#92400e';
+            ctx.font = 'bold 26px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('PENDIDIKAN ISLAM TAHUN 4 • PERMAINAN INTERAKTIF 3D', 600, 145);
+
+            ctx.fillStyle = '#78350f';
+            ctx.font = 'bold 54px sans-serif';
+            ctx.fillText('SIJIL PENGHARGAAN WIRA BERSUCI', 600, 230);
+
+            ctx.fillStyle = '#451a03';
+            ctx.font = '28px sans-serif';
+            ctx.fillText('Dengan ini diperakui bahawa', 600, 315);
+
+            const studentName = document.getElementById('cert-student-name').innerText;
+            ctx.fillStyle = '#1e1b4b';
+            ctx.font = 'bold 48px sans-serif';
+            ctx.fillText(studentName, 600, 395);
+
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(250, 415);
+            ctx.lineTo(950, 415);
+            ctx.stroke();
+
+            ctx.fillStyle = '#451a03';
+            ctx.font = '26px sans-serif';
+            ctx.fillText('Telah berjaya menyelesaikan semua 6 Bilik Misteri dalam', 600, 490);
+            ctx.font = 'bold 30px sans-serif';
+            ctx.fillText('ESCAPE ROOM: RAHSIA KAMPUNG BERSIH', 600, 535);
+
+            ctx.font = '24px sans-serif';
+            ctx.fillText(`Markah Akhir: ${GameState.score} Mata  •  Semua 6 Kunci Utama Dikumpul`, 600, 610);
+
+            ctx.fillStyle = '#065f46';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('🏅 Pakar Najis Mukhaffafah   •   🏅 Pakar Mutawassitah   •   🏅 Pakar Mughallazah', 600, 700);
+
+            const link = document.createElement('a');
+            link.download = `Sijil_Wira_Bersuci_${studentName.replace(/\s+/g, '_')}.png`;
+            link.href = c.toDataURL('image/png');
+            link.click();
+            showToast("📥 Sijil Digital Wira Bersuci berjaya dimuat turun!", "success");
+        }
+
+        function toggleModal(id, show) {
+            const el = document.getElementById(id);
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
+        function toggleAudio() {
+            SoundEngine.enabled = !SoundEngine.enabled;
+            const btn = document.getElementById('btn-toggle-audio');
+            btn.innerText = SoundEngine.enabled ? "HIDUP" : "SENYAP";
+            btn.className = SoundEngine.enabled
+                ? "px-4 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-sm cursor-pointer"
+                : "px-4 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-sm cursor-pointer";
+        }
+
+        function updateVolume(val) {
+            SoundEngine.volume = val / 100;
+            document.getElementById('volume-label').innerText = `${val}%`;
+        }
+
+        function setGraphicsQuality(level) {
+            if (!renderer) return;
+            renderer.setPixelRatio(level === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
+            document.getElementById('qual-high').className = level === 'high'
+                ? "py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs cursor-pointer"
+                : "py-2 rounded-xl bg-white border border-slate-300 font-bold text-xs cursor-pointer";
+            document.getElementById('qual-low').className = level === 'low'
+                ? "py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs cursor-pointer"
+                : "py-2 rounded-xl bg-white border border-slate-300 font-bold text-xs cursor-pointer";
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        // Mulakan enjin 3D apabila halaman selesai dimuat
+        window.onload = function() {
+            initThreeJS();
+        };
+    </script>
+</body>
+</html>
